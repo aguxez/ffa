@@ -5,7 +5,6 @@ go 1.22.4
 require (
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/tmc/langchaingo v0.1.12
-	gopkg.in/fsnotify.v1 v1.4.7
 )
 
 require (
@@ -34,6 +33,7 @@ require (
 	go.starlark.net v0.0.0-20230302034142-4b1e35fe2254 // indirect
 	golang.org/x/crypto v0.23.0 // indirect
 	golang.org/x/exp v0.0.0-20230713183714-613f0c0eb8a1 // indirect
-	golang.org/x/sys v0.20.0 // indirect
+	golang.org/x/sync v0.11.0 // indirect
+	golang.org/x/sys v0.30.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
