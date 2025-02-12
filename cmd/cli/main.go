@@ -7,9 +7,12 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"time"
 
+	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/reflow/indent"
 	"github.com/muesli/reflow/wordwrap"
 )
@@ -19,29 +22,42 @@ const (
 )
 
 type model struct {
-	plan     string
-	loading  bool
-	err      error
-	quitting bool
-	width    int
-	height   int
-	viewport viewport.Model
+	plan           string         // The meal plan we are viewing
+	loading        bool           // Whether the request is loading
+	loadingSpinner spinner.Model  // Loading spinner
+	err            error          // Error message
+	quitting       bool           // Whether we are quitting the CLI
+	width          int            // Width of the terminal
+	height         int            // Height of the terminal
+	viewport       viewport.Model // Viewport for the meal plan
 }
 
 func initialModel() model {
+	s := spinner.New()
+	s.Spinner = spinner.Dot
+	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+
 	return model{
-		loading:  true,
-		width:    80,
-		height:   24,
-		viewport: viewport.New(80, 24),
+		loading:        true,
+		width:          80,
+		height:         24,
+		viewport:       viewport.New(80, 24),
+		loadingSpinner: s,
 	}
 }
 
 type gotPlanMsg string
 type errMsg error
+type tickMsg struct{}
 
 func (m model) Init() tea.Cmd {
-	return getPlanCmd()
+	return tea.Batch(
+		m.loadingSpinner.Tick,
+		getPlanCmd(make(chan bool)),
+		tea.Tick(time.Millisecond*100, func(t time.Time) tea.Msg {
+			return tickMsg{}
+		}),
+	)
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -61,6 +77,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.viewport.SetContent(indented)
 		return m, nil
 
+	case tickMsg:
+		if m.loading {
+			var cmd tea.Cmd
+			m.loadingSpinner, cmd = m.loadingSpinner.Update(msg)
+			return m, cmd
+		}
+
+		return m, nil
+
 	case errMsg:
 		m.err = msg
 		m.loading = false
@@ -68,7 +93,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "q", "esc", "ctrl+c":
+		case "ctrl+c":
 			m.quitting = true
 			return m, tea.Quit
 		case "up", "k":
@@ -77,7 +102,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.viewport.LineDown(1)
 		}
 	}
+
 	m.viewport, _ = m.viewport.Update(msg)
+
+	var cmd tea.Cmd
+	if m.loading {
+		m.loadingSpinner, cmd = m.loadingSpinner.Update(msg)
+		return m, cmd
+	}
 	return m, nil
 }
 
@@ -89,14 +121,16 @@ func (m model) View() string {
 		return "Quitting.\n"
 	}
 	if m.loading {
-		return "Loading...\n"
+		return lipgloss.JoinHorizontal(lipgloss.Center, m.loadingSpinner.View(), lipgloss.NewStyle().PaddingLeft(1).Render("Loading..."))
 	}
 
 	return m.viewport.View()
 }
 
-func getPlanCmd() tea.Cmd {
+func getPlanCmd(done chan bool) tea.Cmd {
 	return func() tea.Msg {
+		defer close(done)
+
 		resp, err := http.Post(apiURL, "application/json", bytes.NewBuffer([]byte{}))
 		if err != nil {
 			return errMsg(err)
