@@ -46,7 +46,7 @@ func main() {
 	llm, err := openai.New(
 		openai.WithBaseURL("https://openrouter.ai/api/v1"),
 		openai.WithToken(os.Getenv("OPENROUTER_API_KEY")),
-		openai.WithModel("google/gemini-2.0-flash-001"),
+		openai.WithModel("deepseek/deepseek-r1-distill-llama-70b"),
 	)
 	if err != nil {
 		log.Fatal(err)

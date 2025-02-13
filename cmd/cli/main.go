@@ -12,6 +12,7 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/reflow/indent"
 	"github.com/muesli/reflow/wordwrap"
@@ -19,6 +20,7 @@ import (
 
 const (
 	apiURL = "http://localhost:8080/mealplan"
+	// apiURL = "https://httpbin.org/post"
 )
 
 type model struct {
@@ -51,13 +53,7 @@ type errMsg error
 type tickMsg struct{}
 
 func (m model) Init() tea.Cmd {
-	return tea.Batch(
-		m.loadingSpinner.Tick,
-		getPlanCmd(make(chan bool)),
-		tea.Tick(time.Millisecond*100, func(t time.Time) tea.Msg {
-			return tickMsg{}
-		}),
-	)
+	return m.requestPlan()
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -74,7 +70,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.loading = false
 		wrapped := wordwrap.String(m.plan, m.width)
 		indented := indent.String(wrapped, 2)
-		m.viewport.SetContent(indented)
+
+		out, err := glamour.Render(indented, "dark")
+		if err != nil {
+			m.err = err
+			m.loading = false
+			return m, nil
+		}
+
+		m.viewport.SetContent(out)
 		return m, nil
 
 	case tickMsg:
@@ -93,11 +97,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c":
+
+		case "q":
 			m.quitting = true
 			return m, tea.Quit
+
+		case "r":
+			m.loading = true
+			return m, m.requestPlan()
+
 		case "up", "k":
 			m.viewport.LineUp(1)
+
 		case "down", "j":
 			m.viewport.LineDown(1)
 		}
@@ -121,10 +132,30 @@ func (m model) View() string {
 		return "Quitting.\n"
 	}
 	if m.loading {
-		return lipgloss.JoinHorizontal(lipgloss.Center, m.loadingSpinner.View(), lipgloss.NewStyle().PaddingLeft(1).Render("Loading..."))
+		return lipgloss.NewStyle().
+			Width(m.width).
+			Height(m.height).
+			AlignVertical(lipgloss.Center).
+			Align(lipgloss.Center).
+			Render(
+				lipgloss.JoinHorizontal(lipgloss.Center,
+					m.loadingSpinner.View(),
+					"Generating meal plan",
+				),
+			)
 	}
 
 	return m.viewport.View()
+}
+
+func (m model) requestPlan() tea.Cmd {
+	return tea.Batch(
+		m.loadingSpinner.Tick,
+		getPlanCmd(make(chan bool)),
+		tea.Tick(time.Millisecond*100, func(t time.Time) tea.Msg {
+			return tickMsg{}
+		}),
+	)
 }
 
 func getPlanCmd(done chan bool) tea.Cmd {

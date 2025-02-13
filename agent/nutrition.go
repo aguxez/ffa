@@ -48,14 +48,18 @@ func NewNutritionAgent(llm *openai.LLM, state *models.StateManager) *NutritionAg
 
 	Provide portions in grams and include estimated macros per meal if possible.
 
-	For your response, prefer to give portions and weights for all week instead of per day while breaking down
-	macros per day.
+	For your response, prefer to give portions and weights for all weekdays instead
+	of per day while breaking down macros per day. For example: "chicken breast 800g (160 per serving)"
 
 	Stick to this JSON format for your output.
 
 	{
 		"plan": string
 	}
+
+	Make the plan markdown compatible with some color!
+
+	Ensure the plan is formatted in a way that's displayable in a terminal.
 	`
 
 	// Create chain with memory
