@@ -30,7 +30,6 @@ type model struct {
 	loading        bool           // Whether the request is loading
 	loadingSpinner spinner.Model  // Loading spinner
 	err            error          // Error message
-	quitting       bool           // Whether we are quitting the CLI
 	width          int            // Width of the terminal
 	height         int            // Height of the terminal
 	viewport       viewport.Model // Viewport for the meal plan
@@ -57,14 +56,15 @@ var keys = keyMap{
 // ShortHelp returns keybindings to be shown in the mini help view. It's part
 // of the key.Map interface.
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Refresh, k.Quit}
+	return []key.Binding{k.Refresh, k.Quit, k.Help}
 }
 
 // FullHelp returns keybindings for the expanded help view. It's part of the
 // key.Map interface.
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.Up, k.Down, k.Refresh, k.Quit}, // first column
+		{k.Up, k.Down},
+		{k.Refresh, k.Quit},
 		{k.Help},
 	}
 }
@@ -76,9 +76,7 @@ func initialModel() model {
 
 	return model{
 		loading:        true,
-		width:          80,
-		height:         24,
-		viewport:       viewport.New(80, 24),
+		viewport:       viewport.New(0, 0),
 		loadingSpinner: s,
 		keys:           keys,
 		help:           help.New(),
@@ -137,8 +135,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, m.keys.Quit):
-			m.quitting = true
-			return m, nil
+			return m, tea.Quit
 
 		case key.Matches(msg, m.keys.Help):
 			m.help.ShowAll = !m.help.ShowAll
@@ -156,14 +153,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	m.viewport, _ = m.viewport.Update(msg)
+	var vpCmd tea.Cmd
+	m.viewport, vpCmd = m.viewport.Update(msg)
 
 	var cmd tea.Cmd
 	if m.loading {
 		m.loadingSpinner, cmd = m.loadingSpinner.Update(msg)
-		return m, cmd
+		return m, tea.Batch(cmd, vpCmd)
 	}
-	return m, nil
+	return m, vpCmd
 }
 
 func (m model) View() string {
@@ -185,9 +183,14 @@ func (m model) View() string {
 			)
 	}
 
-	helpView := m.help.View(m.keys)
+	helpView := lipgloss.NewStyle().PaddingLeft(2).MarginTop(1).Render(m.help.View(m.keys))
+	contentHeight := m.height - lipgloss.Height(helpView)
+	if contentHeight < 0 {
+		contentHeight = 0
+	}
+	m.viewport.Height = contentHeight
 
-	return lipgloss.JoinVertical(lipgloss.Left, helpView, m.viewport.View())
+	return lipgloss.JoinVertical(lipgloss.Left, m.viewport.View(), helpView)
 }
 
 func (m model) requestPlan() tea.Cmd {
