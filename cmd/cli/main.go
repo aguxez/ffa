@@ -9,6 +9,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -32,6 +34,39 @@ type model struct {
 	width          int            // Width of the terminal
 	height         int            // Height of the terminal
 	viewport       viewport.Model // Viewport for the meal plan
+	keys           keyMap         // The key bindings shown in the viewport
+	help           help.Model     // The help model in the viewport
+}
+
+type keyMap struct {
+	Refresh key.Binding
+	Quit    key.Binding
+	Up      key.Binding
+	Down    key.Binding
+	Help    key.Binding
+}
+
+var keys = keyMap{
+	Refresh: key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "refresh")),
+	Quit:    key.NewBinding(key.WithKeys("q", "esc", "ctrl+c"), key.WithHelp("q", "quit")),
+	Up:      key.NewBinding(key.WithKeys("up", "k"), key.WithHelp("↑", "scroll up")),
+	Down:    key.NewBinding(key.WithKeys("down", "j"), key.WithHelp("↓", "scroll down")),
+	Help:    key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "toggle help")),
+}
+
+// ShortHelp returns keybindings to be shown in the mini help view. It's part
+// of the key.Map interface.
+func (k keyMap) ShortHelp() []key.Binding {
+	return []key.Binding{k.Refresh, k.Quit}
+}
+
+// FullHelp returns keybindings for the expanded help view. It's part of the
+// key.Map interface.
+func (k keyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{k.Up, k.Down, k.Refresh, k.Quit}, // first column
+		{k.Help},
+	}
 }
 
 func initialModel() model {
@@ -45,6 +80,8 @@ func initialModel() model {
 		height:         24,
 		viewport:       viewport.New(80, 24),
 		loadingSpinner: s,
+		keys:           keys,
+		help:           help.New(),
 	}
 }
 
@@ -63,6 +100,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 		m.viewport.Width = msg.Width
 		m.viewport.Height = msg.Height
+		m.help.Width = msg.Width
+
 		return m, nil
 
 	case gotPlanMsg:
@@ -96,20 +135,23 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
-		switch msg.String() {
-
-		case "q":
+		switch {
+		case key.Matches(msg, m.keys.Quit):
 			m.quitting = true
-			return m, tea.Quit
+			return m, nil
 
-		case "r":
+		case key.Matches(msg, m.keys.Help):
+			m.help.ShowAll = !m.help.ShowAll
+			return m, nil
+
+		case key.Matches(msg, m.keys.Refresh):
 			m.loading = true
 			return m, m.requestPlan()
 
-		case "up", "k":
+		case key.Matches(msg, m.keys.Up):
 			m.viewport.LineUp(1)
 
-		case "down", "j":
+		case key.Matches(msg, m.keys.Down):
 			m.viewport.LineDown(1)
 		}
 	}
@@ -128,9 +170,7 @@ func (m model) View() string {
 	if m.err != nil {
 		return fmt.Sprintf("Error: %v\n", m.err)
 	}
-	if m.quitting {
-		return "Quitting.\n"
-	}
+
 	if m.loading {
 		return lipgloss.NewStyle().
 			Width(m.width).
@@ -145,7 +185,9 @@ func (m model) View() string {
 			)
 	}
 
-	return m.viewport.View()
+	helpView := m.help.View(m.keys)
+
+	return lipgloss.JoinVertical(lipgloss.Left, helpView, m.viewport.View())
 }
 
 func (m model) requestPlan() tea.Cmd {
