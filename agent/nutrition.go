@@ -23,8 +23,27 @@ type NutritionAgent struct {
 	llm          *openai.LLM
 }
 
+type FoodCategory string
+
+const (
+	Breakfast FoodCategory = "breakfast"
+	Lunch     FoodCategory = "lunch"
+	Dinner    FoodCategory = "dinner"
+	Snack     FoodCategory = "snack"
+)
+
+type MealPlanFood struct {
+	Food            string       `json:"food"`
+	Weight          string       `json:"weight"`
+	Macros          string       `json:"macros"`
+	FoodExplanation string       `json:"foodExplanation"`
+	FoodCategory    FoodCategory `json:"foodCategory"`
+}
+
 type MealPlanResponse struct {
-	Plan string `json:"plan"`
+	Plan            []MealPlanFood `json:"plan"`
+	PlanExplanation string         `json:"planExplanation"`
+	PlanPreparation string         `json:"planPreparation"`
 }
 
 func NewNutritionAgent(llm *openai.LLM, state *models.StateManager) *NutritionAgent {
@@ -51,14 +70,27 @@ func NewNutritionAgent(llm *openai.LLM, state *models.StateManager) *NutritionAg
 	For your response, prefer to give portions and weights for all weekdays instead
 	of per day while breaking down macros per day. For example: "chicken breast 800g (160 per serving)"
 
-	Stick to this JSON format for your output.
+	Stick to this JSON format for the output.
 
 	{
-		"plan": string
+		"plan": [
+			{
+				"food": string, // The food name
+				"weight": string, // The weight of the food in grams
+				"macros": string // Protein, fat, carbs, and calories,
+				"foodExplanation": string // Why this food was chosen over alternatives,
+				"foodCategory": string // The time of the meal
+			}
+		],
+		"planExplanation": string // Explanation of the plan in markdown.
+		"planPreparation": string // Explanation of the plan preparation in markdown.
 	}
 
-	Make the plan markdown compatible with some color!
+	"foodCategory" must be one of breakfast, lunch, dinner, or snack.
 
+	Ensure for "planPreparation" you solely use the foods in the "plan".
+
+	Make the "planExplanation" and "planPreparation" compatible with some color!
 	Ensure the plan is formatted in a way that's displayable in a terminal.
 	`
 
@@ -100,6 +132,7 @@ func (n *NutritionAgent) GenerateMealPlan(ctx context.Context) (MealPlanResponse
 	}
 
 	// Store interaction in memory
+	// TODO: Differentiate from accepted and rejected plans
 	err = n.bufferMemory.SaveContext(ctx, input, result)
 	if err != nil {
 		log.Printf("Error saving to memory: %v", err)
