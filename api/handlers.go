@@ -25,5 +25,5 @@ func HandleMealPlanRequest(planner MealPlanner, w http.ResponseWriter, r *http.R
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"plan": planResponse.Plan})
+	json.NewEncoder(w).Encode(planResponse)
 }
