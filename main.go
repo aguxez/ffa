@@ -1,17 +1,22 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/tmc/langchaingo/llms/openai"
 
 	"github.com/aguxez/ffa/agent"
-	"github.com/aguxez/ffa/api"
 	"github.com/aguxez/ffa/filewatch"
 	"github.com/aguxez/ffa/models"
+)
+
+const (
+	generatePlanDuration = 30 * time.Second
 )
 
 func main() {
@@ -46,7 +51,7 @@ func main() {
 	llm, err := openai.New(
 		openai.WithBaseURL("https://openrouter.ai/api/v1"),
 		openai.WithToken(os.Getenv("OPENROUTER_API_KEY")),
-		openai.WithModel("google/gemini-flash-1.5-8b"),
+		openai.WithModel("google/gemini-2.0-flash-001"),
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -55,10 +60,16 @@ func main() {
 	// Create agent
 	agent := agent.NewNutritionAgent(llm, sm)
 
-	// Setup HTTP server
-	http.HandleFunc("/mealplan", func(w http.ResponseWriter, r *http.Request) {
-		api.HandleMealPlanRequest(agent, w, r)
-	})
+	ctx := context.Background()
+
+	log.Print("Generating meal plan...")
+
+	response, err := agent.GenerateMealPlan(ctx)
+	if err != nil {
+		log.Printf("Error generating meal plan: %v", err)
+	}
+
+	log.Printf("Meal plan: %v", response.Plan)
 
 	// Start file watcher
 	go fw.Watch()
