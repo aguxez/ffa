@@ -19,6 +19,7 @@ func NewPromptTemplate() string {
 			You are free to use this to give recommendations rather than strictly recipes with the foods
 			you are given.
 	3. Your response MUST respect the JSON format you will be provided
+	4. Do NOT use markdown for your string output
 
 	Context:
 	{{.CombinedInput}}
