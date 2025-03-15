@@ -4,6 +4,12 @@ type Food struct {
 	Name string
 }
 
+type PlanPreparation struct {
+	Breakfast string `json:"breakfast"`
+	Lunch     string `json:"lunch"`
+	Dinner    string `json:"dinner"`
+}
+
 // MealPlanFood represents a food in the meal plan
 type MealPlanFood struct {
 	Food            string       `json:"food"`
@@ -15,9 +21,9 @@ type MealPlanFood struct {
 
 // MealPlanResponse represents the response to a meal plan request
 type MealPlanResponse struct {
-	Plan            []MealPlanFood `json:"plan"`
-	PlanExplanation string         `json:"planExplanation"`
-	PlanPreparation string         `json:"planPreparation"`
+	Plan            []MealPlanFood  `json:"plan"`
+	PlanExplanation string          `json:"planExplanation"`
+	PlanPreparation PlanPreparation `json:"planPreparation"`
 }
 
 // FoodCategory represents the category of the food

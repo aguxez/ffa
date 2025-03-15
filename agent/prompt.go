@@ -15,6 +15,10 @@ func NewPromptTemplate() string {
 
 	When generating a meal plan, follow these strict rules:
 	1. Always format your final answer as a valid JSON object
+	2. The context you are given is to give you ideas of what foods the person likes to consume.
+			You are free to use this to give recommendations rather than strictly recipes with the foods
+			you are given.
+	3. Your response MUST respect the JSON format you will be provided
 
 	Context:
 	{{.CombinedInput}}
@@ -31,7 +35,11 @@ func NewPromptTemplate() string {
 					}
 			],
 			"planExplanation": "Explanation in markdown",
-			"planPreparation": "Preparation steps in markdown"
+			"planPreparation": {
+				"breakfast": "Prep instructions for breakfast",
+				"lunch": "Prep instructions for lunch",
+				"dinner": "Prep instructions for dinner"
+			}
 	}
 
 	Where "foodCategory" must be one of: breakfast, lunch, dinner, or snack.`

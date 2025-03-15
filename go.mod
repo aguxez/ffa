@@ -1,6 +1,8 @@
 module github.com/aguxez/ffa
 
-go 1.22.4
+go 1.23.0
+
+toolchain go1.23.7
 
 require (
 	github.com/fsnotify/fsnotify v1.4.7
@@ -8,6 +10,7 @@ require (
 )
 
 require (
+	github.com/Dadido3/go-typst v0.3.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.2.0 // indirect
 	github.com/Masterminds/sprig/v3 v3.2.3 // indirect
@@ -28,6 +31,7 @@ require (
 	github.com/pkoukk/tiktoken-go v0.1.6 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
+	github.com/smasher164/xid v0.1.2 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/yargevad/filepathx v1.0.0 // indirect
 	go.starlark.net v0.0.0-20230302034142-4b1e35fe2254 // indirect
@@ -35,5 +39,6 @@ require (
 	golang.org/x/exp v0.0.0-20230713183714-613f0c0eb8a1 // indirect
 	golang.org/x/sync v0.11.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
+	golang.org/x/text v0.15.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

@@ -1,13 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/Dadido3/go-typst"
 	"github.com/tmc/langchaingo/llms/openai"
 
 	"github.com/aguxez/ffa/agent"
@@ -51,13 +54,12 @@ func main() {
 	llm, err := openai.New(
 		openai.WithBaseURL("https://openrouter.ai/api/v1"),
 		openai.WithToken(os.Getenv("OPENROUTER_API_KEY")),
-		openai.WithModel("google/gemini-2.0-flash-001"),
+		openai.WithModel("qwen/qwq-32b"),
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Create agent
 	agent := agent.NewNutritionAgent(llm, sm)
 
 	ctx := context.Background()
@@ -69,7 +71,93 @@ func main() {
 		log.Printf("Error generating meal plan: %v", err)
 	}
 
-	log.Printf("Meal plan: %v", response.Plan)
+	var planBreakfast string
+	var planLunch string
+	var planDinner string
+	for _, food := range response.Plan {
+		formattedItem := fmt.Sprintf(
+			`
+				"%s", "%s", "%s", "%s",
+				`, food.Food, food.Weight, food.Macros, food.FoodExplanation,
+		)
+
+		switch food.FoodCategory {
+		case "breakfast":
+			planBreakfast += formattedItem
+
+		case "lunch":
+			planLunch += formattedItem
+
+		case "dinner":
+			planDinner += formattedItem
+		}
+	}
+
+	r := bytes.NewBufferString(fmt.Sprintf(
+		`
+		#set text(font: "Inter")
+		= Meal plan #v(1em)
+
+		%s
+
+		== Breakfast
+		#table(
+			columns: (auto, auto, auto, auto),
+			align: horizon,
+			table.header(
+				[*Food*], [*Weight*], [*Macros*], [*Explanation*]
+			),
+			%s
+		)
+
+		== Lunch
+
+		#table(
+			columns: (auto, auto, auto, auto),
+			align: horizon,
+			table.header(
+				[*Food*], [*Weight*], [*Macros*], [*Explanation*]
+			),
+			%s
+		)
+
+		== Dinner
+		#table(
+			columns: (auto, auto, auto, auto),
+			align: horizon,
+			table.header(
+				[*Food*], [*Weight*], [*Macros*], [*Explanation*]
+			),
+			%s
+		)
+
+		== Preparation
+		=== Breakfast
+		%s
+
+		=== Lunch
+		%s
+
+		=== Dinner
+		%s
+
+		#line(length: 30em)
+		Remember to double check and adapt the instructions in this document as it might contain errors or not be extremely accurate for your situation. Specifically in the serving sizes and macros.
+		`,
+		response.PlanExplanation, planBreakfast, planLunch, planDinner, response.PlanPreparation.Breakfast, response.PlanPreparation.Lunch, response.PlanPreparation.Dinner,
+	))
+
+	typstCLI := typst.CLI{}
+
+	f, err := os.Create("output.pdf")
+	if err != nil {
+		log.Fatal("Failed to create file", err)
+	}
+	defer f.Close()
+
+	if err := typstCLI.Compile(r, f, nil); err != nil {
+		log.Fatalf("Failed to compile document: %v.", err)
+	}
 
 	// Start file watcher
 	go fw.Watch()
