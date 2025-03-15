@@ -54,7 +54,7 @@ func main() {
 	llm, err := openai.New(
 		openai.WithBaseURL("https://openrouter.ai/api/v1"),
 		openai.WithToken(os.Getenv("OPENROUTER_API_KEY")),
-		openai.WithModel("qwen/qwq-32b"),
+		openai.WithModel("anthropic/claude-3.7-sonnet:beta"),
 	)
 	if err != nil {
 		log.Fatal(err)
