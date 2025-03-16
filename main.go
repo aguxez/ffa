@@ -71,9 +71,12 @@ func main() {
 		log.Printf("Error generating meal plan: %v", err)
 	}
 
-	var planBreakfast string
-	var planLunch string
-	var planDinner string
+	planByCategory := make(map[string]string)
+
+	// var planBreakfast string
+	// var planLunch string
+	// var planDinner string
+	// var planDinner
 	for _, food := range response.Plan {
 		formattedItem := fmt.Sprintf(
 			`
@@ -83,14 +86,18 @@ func main() {
 
 		switch food.FoodCategory {
 		case "breakfast":
-			planBreakfast += formattedItem
+			planByCategory["breakfast"] += formattedItem
 
 		case "lunch":
-			planLunch += formattedItem
+			planByCategory["lunch"] += formattedItem
 
 		case "dinner":
-			planDinner += formattedItem
+			planByCategory["dinner"] += formattedItem
+
+		case "snack":
+			planByCategory["snack"] += formattedItem
 		}
+
 	}
 
 	r := bytes.NewBufferString(fmt.Sprintf(
@@ -131,6 +138,16 @@ func main() {
 			%s
 		)
 
+		== Snack
+		#table(
+			columns: (auto, auto, auto, auto),
+			align: horizon,
+			table.header(
+				[*Food*], [*Weight*], [*Macros*], [*Explanation*]
+			),
+			%s
+		)
+
 		== Preparation
 		=== Breakfast
 		%s
@@ -144,7 +161,14 @@ func main() {
 		#line(length: 30em)
 		Remember to double check and adapt the instructions in this document as it might contain errors or not be extremely accurate for your situation. Specifically in the serving sizes and macros.
 		`,
-		response.PlanExplanation, planBreakfast, planLunch, planDinner, response.PlanPreparation.Breakfast, response.PlanPreparation.Lunch, response.PlanPreparation.Dinner,
+		response.PlanExplanation,
+		planByCategory["breakfast"],
+		planByCategory["lunch"],
+		planByCategory["dinner"],
+		planByCategory["snack"],
+		response.PlanPreparation.Breakfast,
+		response.PlanPreparation.Lunch,
+		response.PlanPreparation.Dinner,
 	))
 
 	typstCLI := typst.CLI{}
