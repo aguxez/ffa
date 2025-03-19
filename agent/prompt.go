@@ -18,8 +18,11 @@ func NewPromptTemplate() string {
 	2. The context you are given is to give you ideas of what foods the person likes to consume.
 			You are free to use this to give recommendations rather than strictly recipes with the foods
 			you are given.
-	3. Your response MUST respect the JSON format you will be provided
+	3. Your response MUST respect the JSON format you will be provided. If you encounter an error,
+			return an empty JSON object with the provided keys so it can be parsed.
 	4. Do NOT use markdown for your string output
+	5. Be creative with your suggestions as long as they can be meal prepped.
+		 For the weekdays, this is crucial since the idea is to prepare in advance.
 
 	Context:
 	{{.CombinedInput}}

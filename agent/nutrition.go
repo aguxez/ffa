@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tmc/langchaingo/llms"
 	"github.com/tmc/langchaingo/llms/openai"
 	"github.com/tmc/langchaingo/prompts"
 
@@ -69,7 +70,8 @@ func (n *NutritionAgent) GenerateMealPlan(ctx context.Context) (models.MealPlanR
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, 120*time.Second)
 	defer cancel()
 
-	output, err := n.llm.Call(ctxWithTimeout, prompt)
+	// Temperature is overridden to promote more diversity in answers for a given input
+	output, err := n.llm.Call(ctxWithTimeout, prompt, llms.WithTemperature(1.5))
 	if err != nil {
 		return models.MealPlanResponse{}, err
 	}

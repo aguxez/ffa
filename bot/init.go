@@ -83,6 +83,25 @@ func Init(sm *models.StateManager) error {
 func (b *LLMBot) createMealPlanHandler(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) {
 	log.Print("Generating meal plan...")
 
+	// First remove the markup button the user pressed
+	_, err := bot.EditMessageReplyMarkup(ctx, &tgbot.EditMessageReplyMarkupParams{
+		ChatID:    update.CallbackQuery.Message.Message.Chat.ID,
+		MessageID: update.CallbackQuery.Message.Message.ID,
+		ReplyMarkup: &tgmodels.InlineKeyboardMarkup{
+			InlineKeyboard: [][]tgmodels.InlineKeyboardButton{},
+		},
+	})
+	if err != nil {
+		log.Printf("Error editing message: %v", err)
+	}
+
+	// Then inform the user about the state
+	bot.SendMessage(ctx, &tgbot.SendMessageParams{
+		ChatID: update.CallbackQuery.Message.Message.Chat.ID,
+		Text:   "I'm generating a plan for you now.",
+	})
+
+	// Then proceed to generate the meal plan
 	plan, err := b.llm.GenerateMealPlan(ctx)
 	if err != nil {
 		log.Printf("Error generating meal plan: %v", err)
@@ -108,7 +127,7 @@ func (b *LLMBot) createMealPlanHandler(ctx context.Context, bot *tgbot.Bot, upda
 	bot.SendDocument(ctx, &tgbot.SendDocumentParams{
 		ChatID: update.CallbackQuery.Message.Message.Chat.ID,
 		Document: &tgmodels.InputFileUpload{
-			Filename: "meal_plan.pdf",
+			Filename: "personalized_meal_plan.pdf",
 			Data:     &doc,
 		},
 	})
@@ -118,7 +137,7 @@ func startCommandHandler(ctx context.Context, bot *tgbot.Bot, update *tgmodels.U
 	log.Print("Received call on startCommandHandler")
 
 	// Send a message saying what the bot does and shows buttons
-	msg, err := bot.SendMessage(ctx, &tgbot.SendMessageParams{
+	_, err := bot.SendMessage(ctx, &tgbot.SendMessageParams{
 		Text:   "I can help you create meal plans tailored for your dietary preferences",
 		ChatID: update.Message.Chat.ID,
 		ReplyMarkup: &tgmodels.InlineKeyboardMarkup{
@@ -136,8 +155,6 @@ func startCommandHandler(ctx context.Context, bot *tgbot.Bot, update *tgmodels.U
 		log.Printf("Error sending message: %v", err)
 		return
 	}
-
-	log.Printf("Message sent: %v", msg.ID)
 }
 
 func defaultMsgHandler(_ context.Context, _ *bot.Bot, update *tgmodels.Update) {

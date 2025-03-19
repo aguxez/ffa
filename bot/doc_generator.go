@@ -42,7 +42,13 @@ func GenerateDocFromMealPlan(mealPlan models.MealPlanResponse) (bytes.Buffer, er
 	r := bytes.NewBufferString(fmt.Sprintf(
 		`
 		#set text(font: "Inter")
-		= Meal plan #v(1em)
+		#grid(
+			columns: (auto, auto),
+			gutter: 1em,
+			align: (horizon, horizon),
+			[= Meal Plan],
+			[#image("assets/bot-logo.svg", height: 1.2em)]
+		)
 
 		%s
 
