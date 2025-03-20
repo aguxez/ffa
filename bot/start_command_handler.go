@@ -26,8 +26,19 @@ func NewStartCommandHandler(deps *HandlerDependencies) *StartCommandHandler {
 func (h *StartCommandHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) {
 	log.Debug().Str("handler", "StartCommandHandler").Msg("Handling start command")
 
-	userID := uint(update.Message.From.ID)
-	chatID := update.Message.Chat.ID
+	var userID uint
+	var chatID int64
+
+	// This handler can be called from either a callback query triggering it
+	// or a normal init message so we check these two fields for the existence
+	// of the data we want
+	if update.Message != nil {
+		userID = uint(update.Message.From.ID)
+		chatID = update.Message.Chat.ID
+	} else if update.CallbackQuery != nil {
+		userID = uint(update.CallbackQuery.From.ID)
+		chatID = update.CallbackQuery.Message.Message.Chat.ID
+	}
 
 	// Initialize user state
 	h.deps.StateManager.SetUserState(userID, models.ConversationStageStart)
@@ -40,36 +51,7 @@ func (h *StartCommandHandler) Handle(ctx context.Context, bot *tgbot.Bot, update
 	}
 
 	// Send welcome message with options
-	_, err = bot.SendMessage(ctx, &tgbot.SendMessageParams{
-		Text:   "I can help you create meal plans tailored for your dietary preferences",
-		ChatID: chatID,
-		ReplyMarkup: &tgmodels.InlineKeyboardMarkup{
-			InlineKeyboard: [][]tgmodels.InlineKeyboardButton{
-				{
-					{
-						Text:         "Create Meal Plan",
-						CallbackData: string(CallbackDataCreateMealPlan),
-					},
-				},
-				{
-					{
-						Text:         "Add dietary preference",
-						CallbackData: string(CallbackDataAddDietaryPreference),
-					},
-				},
-				{
-					{
-						Text:         "Add food",
-						CallbackData: string(CallbackDataAddUserFood),
-					},
-					{
-						Text:         "Add schedule",
-						CallbackData: string(CallbackDataAddPlanSchedule),
-					},
-				},
-			},
-		},
-	})
+	_, err = bot.SendMessage(ctx, InitialMenuMessageParams(chatID))
 	if err != nil {
 		log.Err(err).Msg("Error sending welcome message")
 	}

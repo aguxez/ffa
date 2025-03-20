@@ -20,6 +20,8 @@ const (
 	CallbackDataAddPlanSchedule       CallbackData = "add_plan_schedule"
 	CallbackDataPlanScheduleWeekly    CallbackData = "plan_schedule_weekly"
 	CallbackDataPlanScheduleThreeDays CallbackData = "plan_schedule_three_days"
+	CallbackDataAddMacroTargets       CallbackData = "add_macro_targets"
+	CallbackDataBackToOptions         CallbackData = "back_to_options"
 )
 
 // Handler is the interface for all handlers

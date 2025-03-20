@@ -27,26 +27,34 @@ func (h *PlanScheduleHandler) Handle(ctx context.Context, bot *tgbot.Bot, update
 	log.Debug().Str("handler", "PlanScheduleHandler").Msg("Handling plan schedule addition")
 
 	userID := uint(update.CallbackQuery.From.ID)
-	chatID := update.CallbackQuery.Message.Message.Chat.ID
-	messageID := update.CallbackQuery.Message.Message.ID
 
 	// Update user state
 	h.deps.StateManager.SetUserState(userID, models.ConversationStageAddPlanSchedule)
 
-	// Delete message with the markup since we cannot modify the text of the message
-	_, err := bot.DeleteMessage(ctx, &tgbot.DeleteMessageParams{
+	h.removeMarkupAndEditMessage(ctx, bot, update)
+}
+
+// removeMarkupAndEditMessage removes the inline keyboard markup and edits the
+// previous message's text
+func (h *PlanScheduleHandler) removeMarkupAndEditMessage(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) {
+	chatID := update.CallbackQuery.Message.Message.Chat.ID
+	messageID := update.CallbackQuery.Message.Message.ID
+
+	// Edit the message's text
+	_, err := bot.EditMessageText(ctx, &tgbot.EditMessageTextParams{
 		ChatID:    chatID,
 		MessageID: messageID,
+		Text:      "Please select an interval for your plan schedule.",
 	})
 	if err != nil {
-		log.Err(err).Msg("Error deleting message")
+		log.Err(err).Msg("Error sending plan schedule message")
 		return
 	}
 
-	// Send schedule options
-	_, err = bot.SendMessage(ctx, &tgbot.SendMessageParams{
-		ChatID: chatID,
-		Text:   "Please select an interval for your plan schedule.",
+	// Edit the message's markup
+	_, err = bot.EditMessageReplyMarkup(ctx, &tgbot.EditMessageReplyMarkupParams{
+		ChatID:    chatID,
+		MessageID: messageID,
 		ReplyMarkup: &tgmodels.InlineKeyboardMarkup{
 			InlineKeyboard: [][]tgmodels.InlineKeyboardButton{
 				{
@@ -86,8 +94,6 @@ func (h *PlanScheduleUpdateHandler) Handle(ctx context.Context, bot *tgbot.Bot, 
 	log.Debug().Str("handler", "PlanScheduleUpdateHandler").Msg("Handling plan schedule update")
 
 	userID := uint(update.CallbackQuery.From.ID)
-	chatID := update.CallbackQuery.Message.Message.Chat.ID
-	messageID := update.CallbackQuery.Message.Message.ID
 
 	// Reset user state
 	h.deps.StateManager.SetUserState(userID, models.ConversationStageNull)
@@ -99,19 +105,40 @@ func (h *PlanScheduleUpdateHandler) Handle(ctx context.Context, bot *tgbot.Bot, 
 		return
 	}
 
-	// Delete message with the markup
-	_, err = bot.DeleteMessage(ctx, &tgbot.DeleteMessageParams{
+	h.removeMarkupAndEditMessage(ctx, bot, update)
+}
+
+func (h *PlanScheduleUpdateHandler) removeMarkupAndEditMessage(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) {
+	chatID := update.CallbackQuery.Message.Message.Chat.ID
+	messageID := update.CallbackQuery.Message.Message.ID
+
+	// Edit the message's text
+	_, err := bot.EditMessageText(ctx, &tgbot.EditMessageTextParams{
 		ChatID:    chatID,
 		MessageID: messageID,
+		Text:      "Successfully updated your plan schedule!",
 	})
 	if err != nil {
-		log.Err(err).Msg("Error deleting message")
+		log.Err(err).Msg("Error sending plan schedule message")
 		return
 	}
 
-	// Confirm to user
-	bot.SendMessage(ctx, &tgbot.SendMessageParams{
-		ChatID: chatID,
-		Text:   "Successfully updated your plan schedule!",
+	// Edit the message's markup
+	_, err = bot.EditMessageReplyMarkup(ctx, &tgbot.EditMessageReplyMarkupParams{
+		ChatID:    chatID,
+		MessageID: messageID,
+		ReplyMarkup: &tgmodels.InlineKeyboardMarkup{
+			InlineKeyboard: [][]tgmodels.InlineKeyboardButton{
+				{
+					{
+						Text:         "↼ Back to options",
+						CallbackData: string(CallbackDataBackToOptions),
+					},
+				},
+			},
+		},
 	})
+	if err != nil {
+		log.Err(err).Msg("Error sending plan schedule message")
+	}
 }

@@ -79,6 +79,8 @@ func (s *BotService) RegisterHandlers() {
 		CallbackDataAddPlanSchedule:       NewPlanScheduleHandler(handlerDeps),
 		CallbackDataPlanScheduleWeekly:    NewPlanScheduleUpdateHandler(handlerDeps, 7),
 		CallbackDataPlanScheduleThreeDays: NewPlanScheduleUpdateHandler(handlerDeps, 3),
+		// We wat this command to always return to the 'main menu' so to speak
+		CallbackDataBackToOptions: NewBackToOptionsHandler(handlerDeps),
 	}
 
 	for callbackData, handler := range callbackHandlers {
