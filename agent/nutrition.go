@@ -39,7 +39,9 @@ func NewNutritionAgent(llm *openai.LLM, state *models.StateManager) *NutritionAg
 // It also considers the previous conversations and meal plans.
 // The generated plan is a JSON object with pre defined keys.
 func (n *NutritionAgent) GenerateMealPlan(ctx context.Context) (models.MealPlanResponse, error) {
-	foods, macrosDays := n.state.GetFoodsAndMacros()
+	// foods, macrosDays := n.state.GetFoodsAndMacros()
+	foods := []string{}
+	macrosDays := make([]models.MacroDay, 0)
 
 	// More structured formatting of input to help the LLM
 	foodsStr := "Available Foods:\n"
