@@ -2,7 +2,6 @@ package bot
 
 import (
 	"context"
-	"errors"
 	"os"
 	"os/signal"
 	"strings"
@@ -63,15 +62,33 @@ func (b *LLMBot) RegisterHandlers() {
 	)
 
 	b.tgBot.RegisterHandler(tgbot.HandlerTypeCallbackQueryData,
-		"create_meal_plan",
+		string(CallbackDataCreateMealPlan),
 		tgbot.MatchTypeExact,
 		b.createMealPlanHandler,
 	)
 
 	b.tgBot.RegisterHandler(tgbot.HandlerTypeCallbackQueryData,
-		"add_user_food",
+		string(CallbackDataAddUserFood),
 		tgbot.MatchTypeExact,
 		b.addUserFoodHandler,
+	)
+
+	b.tgBot.RegisterHandler(tgbot.HandlerTypeCallbackQueryData,
+		string(CallbackDataAddPlanSchedule),
+		tgbot.MatchTypeExact,
+		b.addPlanSchedule,
+	)
+
+	b.tgBot.RegisterHandler(tgbot.HandlerTypeCallbackQueryData,
+		string(CallbackDataPlanScheduleWeekly),
+		tgbot.MatchTypeExact,
+		b.updatePlanScheduleFromMsg,
+	)
+
+	b.tgBot.RegisterHandler(tgbot.HandlerTypeCallbackQueryData,
+		string(CallbackDataPlanScheduleThreeDays),
+		tgbot.MatchTypeExact,
+		b.updatePlanScheduleFromMsg,
 	)
 
 	// Works as a match all handler
@@ -109,7 +126,7 @@ func (b *LLMBot) addUserFoodHandler(ctx context.Context, bot *tgbot.Bot, update 
 	log.Debug().Str("handler", "addUserFoodHandler").Msg("Received message")
 
 	// Set user state in the state manager
-	b.sm.SetUserState(uint(update.CallbackQuery.From.ID), "add_user_food")
+	b.sm.SetUserState(uint(update.CallbackQuery.From.ID), models.ConversationStageAddUserFood)
 
 	_, err := bot.SendMessage(ctx, &tgbot.SendMessageParams{
 		ChatID: update.CallbackQuery.Message.Message.Chat.ID,
@@ -123,8 +140,20 @@ func (b *LLMBot) addUserFoodHandler(ctx context.Context, bot *tgbot.Bot, update 
 func (b *LLMBot) createMealPlanHandler(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) {
 	log.Debug().Str("handler", "createMealPlanHandler").Msg("Received message")
 
-	// First remove the markup button the user pressed
-	_, err := bot.EditMessageReplyMarkup(ctx, &tgbot.EditMessageReplyMarkupParams{
+	// First, load the user foods
+	userFoods, err := database.GetUserFoods(b.db, uint(update.CallbackQuery.From.ID))
+	if err != nil {
+		log.Err(err).Msg("Error getting user foods")
+	}
+
+	if len(userFoods) == 0 {
+		// TODO: Send a message saying we have not saved food preferences yet
+		log.Debug().Int64("user_id", update.CallbackQuery.From.ID).Msg("No user foods found")
+		return
+	}
+
+	// then remove the markup button the user pressed
+	_, err = bot.EditMessageReplyMarkup(ctx, &tgbot.EditMessageReplyMarkupParams{
 		ChatID:    update.CallbackQuery.Message.Message.Chat.ID,
 		MessageID: update.CallbackQuery.Message.Message.ID,
 		ReplyMarkup: &tgmodels.InlineKeyboardMarkup{
@@ -142,7 +171,7 @@ func (b *LLMBot) createMealPlanHandler(ctx context.Context, bot *tgbot.Bot, upda
 	})
 
 	// Then proceed to generate the meal plan
-	plan, err := b.llm.GenerateMealPlan(ctx)
+	plan, err := b.llm.GenerateMealPlan(ctx, userFoods)
 	if err != nil {
 		log.Err(err).Msg("Error generating meal plan")
 
@@ -176,12 +205,15 @@ func (b *LLMBot) createMealPlanHandler(ctx context.Context, bot *tgbot.Bot, upda
 func (b *LLMBot) startCommandHandler(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) {
 	log.Debug().Str("handler", "startCommandHandler").Msg("Received message")
 
-	// initialize user state
-	b.sm.SetUserState(uint(update.Message.From.ID), "start")
+	userID := uint(update.Message.From.ID)
 
-	err := createUserIfNotExists(b.db, update)
+	// initialize user state
+	b.sm.SetUserState(userID, models.ConversationStageStart)
+
+	// Every time this is called we need to ensure the user exists
+	_, err := database.GetOrCreateUser(b.db, userID)
 	if err != nil {
-		log.Err(err).Msg("Error creating user")
+		log.Err(err).Msg("Error finding or creating user")
 		return
 	}
 
@@ -194,21 +226,23 @@ func (b *LLMBot) startCommandHandler(ctx context.Context, bot *tgbot.Bot, update
 				{
 					{
 						Text:         "Create Meal Plan",
-						CallbackData: "create_meal_plan",
+						CallbackData: string(CallbackDataCreateMealPlan),
 					},
+				},
+				{
 					{
-						Text:         "Configure schedule",
-						CallbackData: "configure_meal_plan_schedule",
+						Text:         "Add dietary preference",
+						CallbackData: string(CallbackDataAddDietaryPreference),
 					},
 				},
 				{
 					{
 						Text:         "Add food",
-						CallbackData: "add_user_food",
+						CallbackData: string(CallbackDataAddUserFood),
 					},
 					{
 						Text:         "Add schedule",
-						CallbackData: "add_plan_schedule",
+						CallbackData: string(CallbackDataAddPlanSchedule),
 					},
 				},
 			},
@@ -218,30 +252,6 @@ func (b *LLMBot) startCommandHandler(ctx context.Context, bot *tgbot.Bot, update
 		log.Err(err).Msg("Error sending message")
 		return
 	}
-}
-
-func createUserIfNotExists(db *gorm.DB, update *tgmodels.Update) error {
-	// Fetch user, create if it doesn't exist
-	user, err := database.GetUser(db, uint(update.Message.From.ID))
-
-	if user != nil {
-		return nil
-	}
-
-	if !errors.Is(err, gorm.ErrRecordNotFound) && err != nil {
-		log.Err(err).Msg("Error fetching user")
-		return err
-	}
-
-	log.Debug().Msg("User not found, creating...")
-
-	err = database.CreateUser(db, uint(update.Message.From.ID))
-	if err != nil {
-		log.Err(err).Msg("Error creating user")
-		return err
-	}
-
-	return nil
 }
 
 func (b *LLMBot) messageHandler(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) {
@@ -262,10 +272,11 @@ func (b *LLMBot) messageHandler(ctx context.Context, bot *tgbot.Bot, update *tgm
 		return
 	}
 
-	// Now safely access the conversation stage
-	switch userState.ConversationStage {
-	case "add_user_food":
+	switch userState.Stage {
+
+	case models.ConversationStageAddUserFood:
 		b.addUserFoodFromMsg(ctx, bot, update)
+
 	default:
 		log.Debug().Msg("No message handler matched")
 		return
@@ -288,14 +299,102 @@ func (b *LLMBot) addUserFoodFromMsg(ctx context.Context, bot *tgbot.Bot, update 
 			Text:   "There was an error saving your food. This has been informed. Please try again.",
 			ChatID: update.Message.Chat.ID,
 		})
+
+		return
 	}
 
 	// Set user state in the state manager
-	b.sm.SetUserState(uint(update.Message.From.ID), "")
+	b.sm.SetUserState(uint(update.Message.From.ID), models.ConversationStageNull)
 
 	// Reply to user
 	bot.SendMessage(ctx, &tgbot.SendMessageParams{
 		Text:   "Successfuly updated your food preferences!",
 		ChatID: update.Message.Chat.ID,
+	})
+}
+
+func (b *LLMBot) addPlanSchedule(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) {
+	log.Debug().Str("handler", "addPlanSchedule").Msg("Received message")
+
+	// Set user state in the state manager
+	b.sm.SetUserState(uint(update.CallbackQuery.From.ID), models.ConversationStageAddPlanSchedule)
+
+	// // Find user plan schedule
+	// user, err := database.GetUser(b.db, uint(update.Message.From.ID))
+	// if err != nil {
+	// 	log.Err(err).Msg("Error fetching user")
+	// 	return
+	// }
+
+	// Delete message with the markup since we cannot modify the text of the message
+	// if we wish to edit it
+	_, err := bot.DeleteMessage(ctx, &tgbot.DeleteMessageParams{
+		ChatID:    update.CallbackQuery.Message.Message.Chat.ID,
+		MessageID: update.CallbackQuery.Message.Message.ID,
+	})
+	if err != nil {
+		log.Err(err).Msg("Error deleting message")
+		return
+	}
+
+	// Send an inline keyboard with the options available for intervals
+	_, err = bot.SendMessage(ctx, &tgbot.SendMessageParams{
+		ChatID: update.CallbackQuery.Message.Message.Chat.ID,
+		Text:   "Please select an interval for your plan schedule.",
+		ReplyMarkup: &tgmodels.InlineKeyboardMarkup{
+			InlineKeyboard: [][]tgmodels.InlineKeyboardButton{
+				{
+					{
+						Text:         "Weekly",
+						CallbackData: string(CallbackDataPlanScheduleWeekly),
+					},
+					{
+						Text:         "Every 3 days",
+						CallbackData: string(CallbackDataPlanScheduleThreeDays),
+					},
+				},
+			},
+		},
+	})
+	if err != nil {
+		log.Err(err).Msg("Error sending plan schedule message")
+		return
+	}
+}
+
+func (b *LLMBot) updatePlanScheduleFromMsg(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) {
+	log.Debug().Str("handler", "updatePlanScheduleFromMsg").Msg("Received message")
+
+	// Set user state in the state manager
+	b.sm.SetUserState(uint(update.CallbackQuery.From.ID), models.ConversationStageNull)
+
+	// Update settings in database
+	var intervalDays uint
+	if update.CallbackQuery.Data == string(CallbackDataPlanScheduleWeekly) {
+		intervalDays = 7
+	} else if update.CallbackQuery.Data == string(CallbackDataPlanScheduleThreeDays) {
+		intervalDays = 3
+	}
+	err := database.UpdateUserPlanSchedule(b.db, uint(update.CallbackQuery.From.ID), intervalDays)
+	if err != nil {
+		log.Err(err).Msg("Error updating user plan schedule")
+		return
+	}
+
+	// Delete message with the markup since we cannot modify the text of the message
+	// if we wish to edit it
+	_, err = bot.DeleteMessage(ctx, &tgbot.DeleteMessageParams{
+		ChatID:    update.CallbackQuery.Message.Message.Chat.ID,
+		MessageID: update.CallbackQuery.Message.Message.ID,
+	})
+	if err != nil {
+		log.Err(err).Msg("Error deleting message")
+		return
+	}
+
+	// Send message informing about the update success
+	bot.SendMessage(ctx, &tgbot.SendMessageParams{
+		ChatID: update.CallbackQuery.Message.Message.Chat.ID,
+		Text:   "Successfuly updated your plan schedule!",
 	})
 }

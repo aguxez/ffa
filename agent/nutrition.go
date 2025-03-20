@@ -11,6 +11,7 @@ import (
 	"github.com/tmc/langchaingo/llms/openai"
 	"github.com/tmc/langchaingo/prompts"
 
+	"github.com/aguxez/ffa/database"
 	"github.com/aguxez/ffa/models"
 )
 
@@ -35,18 +36,20 @@ func NewNutritionAgent(llm *openai.LLM, state *models.StateManager) *NutritionAg
 	}
 }
 
-// GenerateMealPlan generates a meal plan given current foods and targets.
-// It also considers the previous conversations and meal plans.
-// The generated plan is a JSON object with pre defined keys.
-func (n *NutritionAgent) GenerateMealPlan(ctx context.Context) (models.MealPlanResponse, error) {
-	// foods, macrosDays := n.state.GetFoodsAndMacros()
-	foods := []string{}
+// GenerateMealPlan generates a meal plan based on the available foods and macro targets
+//
+// It takes a list of available foods and macro targets, formats them into a structured
+// prompt, and calls the LLM to generate a meal plan.
+//
+// The function will return an error if there was an issue with the LLM call or unmarshalling
+// the response.
+func (n *NutritionAgent) GenerateMealPlan(ctx context.Context, foods []database.UserFood) (models.MealPlanResponse, error) {
 	macrosDays := make([]models.MacroDay, 0)
 
 	// More structured formatting of input to help the LLM
 	foodsStr := "Available Foods:\n"
 	for _, food := range foods {
-		foodsStr += fmt.Sprintf("- %s\n", food)
+		foodsStr += fmt.Sprintf("- %s\n", food.Name)
 	}
 
 	var targetsStr string

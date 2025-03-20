@@ -4,8 +4,17 @@ import (
 	"sync"
 )
 
+type ConversationStage string
+
+const (
+	ConversationStageNull            ConversationStage = "null"
+	ConversationStageAddUserFood     ConversationStage = "add_user_food"
+	ConversationStageStart           ConversationStage = "start"
+	ConversationStageAddPlanSchedule ConversationStage = "add_plan_schedule"
+)
+
 type UserState struct {
-	ConversationStage string
+	Stage ConversationStage
 }
 
 // StateManager handles thread-safe state management
@@ -47,12 +56,12 @@ func (sm *StateManager) GetUserState(userID uint) *UserState {
 // States supported
 // * start
 // * add_user_food
-// * "" -> Empty means we are not waiting for user input
+// * null -> Means awaiting no user input
 // The function takes a StateManager, a user ID and a conversation stage as
 // parameters. It locks the map of user IDs to UserState structs, sets the
 // conversation stage for the given user ID and then unlocks the map.
-func (sm *StateManager) SetUserState(userID uint, stage string) {
+func (sm *StateManager) SetUserState(userID uint, stage ConversationStage) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
-	sm.userStates[userID] = &UserState{ConversationStage: stage}
+	sm.userStates[userID] = &UserState{Stage: stage}
 }
