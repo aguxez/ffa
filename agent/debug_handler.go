@@ -3,9 +3,9 @@ package agent
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 
+	"github.com/rs/zerolog/log"
 	"github.com/tmc/langchaingo/llms"
 	"github.com/tmc/langchaingo/schema"
 )
@@ -27,7 +27,7 @@ func (h *DebugHandler) logMessage(format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
 
 	// Always log to console
-	log.Printf("[AGENT-DEBUG] %s", msg)
+	log.Debug().Msg(fmt.Sprintf("[AGENT-DEBUG] %s", msg))
 }
 
 // HandleText handles debugging text

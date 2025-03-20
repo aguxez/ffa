@@ -4,55 +4,64 @@ import (
 	"sync"
 )
 
+type ConversationStage string
+
+const (
+	ConversationStageNull            ConversationStage = "null"
+	ConversationStageAddUserFood     ConversationStage = "add_user_food"
+	ConversationStageStart           ConversationStage = "start"
+	ConversationStageAddPlanSchedule ConversationStage = "add_plan_schedule"
+)
+
+type UserState struct {
+	Stage ConversationStage
+}
+
 // StateManager handles thread-safe state management
 type StateManager struct {
-	mu      sync.RWMutex
-	foods   []Food
-	targets []MacroDay
-	plans   []MealPlanFood
+	mu         sync.RWMutex
+	userStates map[uint]*UserState
 }
 
-// SaveMealPlan saves a meal plan by appending it to the stored plans.
-// This method is thread-safe and ensures that concurrent accesses to
-// the plans slice do not cause data races.
-
-func (s *StateManager) SaveMealPlan(plan MealPlanFood) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.plans = append(s.plans, plan)
+// NewStateManager creates a new StateManager.
+//
+// The function initializes the map of user IDs to UserState structs and
+// returns a pointer to the new StateManager.
+func NewStateManager() *StateManager {
+	return &StateManager{
+		userStates: make(map[uint]*UserState),
+	}
 }
 
-// UpdateFoods updates the list of foods in the state manager.
-// This method is thread-safe and ensures that concurrent accesses to
-// the foods slice do not cause data races.
-func (s *StateManager) UpdateFoods(foods []Food) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.foods = foods
+// GetUserState retrieves the UserState for a given user ID.
+//
+// The function takes a StateManager and a user ID as parameters. It locks the
+// map of user IDs to UserState structs, retrieves the UserState for the given
+// user ID and then unlocks the map.
+func (sm *StateManager) GetUserState(userID uint) *UserState {
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
+
+	userState, exists := sm.userStates[userID]
+
+	if !exists {
+		return nil
+	}
+
+	return userState
 }
 
-// UpdateTargets updates the list of targets in the state manager.
-// This method is thread-safe and ensures that concurrent accesses to
-// the targets slice do not cause data races.
-func (s *StateManager) UpdateTargets(targets []MacroDay) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.targets = targets
-}
-
-// GetFoodsAndMacros retrieves the current state (foods and targets) from the manager.
-// This method is thread-safe and returns a copy of the current state.
-func (s *StateManager) GetFoodsAndMacros() ([]Food, []MacroDay) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return s.foods, s.targets
-}
-
-// GetPlans retrieves the current list of meal plans stored in the state manager.
-// This method is thread-safe and returns a copy of the plans slice, ensuring
-// that concurrent accesses do not cause data races.
-func (s *StateManager) GetPlans() []MealPlanFood {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return s.plans
+// SetUserState sets the conversation stage for a given user ID.
+//
+// States supported
+// * start
+// * add_user_food
+// * null -> Means awaiting no user input
+// The function takes a StateManager, a user ID and a conversation stage as
+// parameters. It locks the map of user IDs to UserState structs, sets the
+// conversation stage for the given user ID and then unlocks the map.
+func (sm *StateManager) SetUserState(userID uint, stage ConversationStage) {
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+	sm.userStates[userID] = &UserState{Stage: stage}
 }

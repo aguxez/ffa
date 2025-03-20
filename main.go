@@ -1,59 +1,35 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"net/http"
-	"os"
-	"path/filepath"
-	"time"
 
 	"github.com/aguxez/ffa/bot"
-	"github.com/aguxez/ffa/filewatch"
+	"github.com/aguxez/ffa/database"
 	"github.com/aguxez/ffa/models"
-)
-
-const (
-	generatePlanDuration = 30 * time.Second
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 func main() {
-	// Initialize state manager
-	sm := &models.StateManager{}
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
-	fileWatcherPaths := []string{"data/foods", "data/targets"}
-
-	// Setup file watcher
-	fw, err := filewatch.NewFileWatcher(fileWatcherPaths, sm)
+	db, err := database.Connect()
 	if err != nil {
-		log.Fatalf("error creating file watcher: %v", err)
+		log.Error().Msg(fmt.Sprint("Error connecting to database: %v", err.Error()))
 	}
 
-	// On init, load into memory
-	filepath.Walk("data", func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		// Skip directories
-		if info.IsDir() {
-			return nil
-		}
-
-		// Handle file change
-		fw.HandleFileChange(path)
-		return nil
-	})
-	// Start file watcher
-	go fw.Watch()
+	// Initialize state manager
+	sm := models.NewStateManager()
 
 	// Start the bot
 	go func() {
-		if err := bot.Init(sm); err != nil {
-			log.Fatal(err)
+		if err := bot.Init(sm, db); err != nil {
+			log.Err(err).Msg("Error initializing bot")
 		}
 	}()
 
 	// Start HTTP server
-	log.Println("Server starting on :8080...")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Info().Msg("Server starting on :8080...")
+	log.Err(http.ListenAndServe(":8080", nil)).Msg("Error starting server")
 }

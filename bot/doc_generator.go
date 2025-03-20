@@ -3,10 +3,10 @@ package bot
 import (
 	"bytes"
 	"fmt"
-	"log"
 
 	"github.com/Dadido3/go-typst"
 	"github.com/aguxez/ffa/models"
+	"github.com/rs/zerolog/log"
 )
 
 // GenerateDocFromMealPlan generates a Typst document from a meal plan response.
@@ -122,7 +122,7 @@ func GenerateDocFromMealPlan(mealPlan models.MealPlanResponse) (bytes.Buffer, er
 	var buf bytes.Buffer
 
 	if err := typstCLI.Compile(r, &buf, nil); err != nil {
-		log.Printf("Failed to compile document: %v.", err)
+		log.Err(err).Msg("Failed to compile document")
 		return bytes.Buffer{}, err
 	}
 
