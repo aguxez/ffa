@@ -22,9 +22,7 @@ func main() {
 	sm := models.NewStateManager()
 
 	// Start the bot
-	go func() {
-		if err := bot.Init(sm, db); err != nil {
-			log.Err(err).Msg("Error initializing bot")
-		}
-	}()
+	if err := bot.Init(sm, db); err != nil {
+		log.Err(err).Msg("Error initializing bot")
+	}
 }
