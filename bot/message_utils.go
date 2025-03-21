@@ -34,6 +34,12 @@ func InitialMenuMessageParams(chatID int64) *bot.SendMessageParams {
 						CallbackData: string(CallbackDataAddPlanSchedule),
 					},
 				},
+				{
+					{
+						Text:         "Create test plan",
+						CallbackData: string(CallbackDataCreateMealPlan),
+					},
+				},
 			},
 		},
 	}
