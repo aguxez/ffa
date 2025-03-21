@@ -13,5 +13,7 @@ import (
 // to the current time.
 // The function returns an error if there is a problem updating the user.
 func UpdateUserPlanSchedule(db *gorm.DB, userID uint, intervalDays uint) error {
-	return db.Model(&User{}).Where("id = ?", userID).Updates(User{PlanSchedule: UserPlanSchedule{IntervalDays: intervalDays, StartDate: time.Now()}}).Error
+	return db.Model(&User{}).
+		Where("id = ?", userID).
+		Updates(User{PlanSchedule: &UserPlanSchedule{IntervalDays: intervalDays, StartDate: time.Now()}}).Error
 }

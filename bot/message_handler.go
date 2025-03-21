@@ -24,6 +24,7 @@ func NewMessageHandler(deps *HandlerDependencies) *MessageHandler {
 	}
 
 	h.handlers[models.ConversationStageAddUserFood] = NewUserFoodMessageHandler(deps)
+	h.handlers[models.ConversationStageAddMacroTargets] = NewMacroTargetsMessageHandler(deps)
 
 	return h
 }

@@ -7,10 +7,11 @@ import (
 type ConversationStage string
 
 const (
-	ConversationStageNull            ConversationStage = "null"
-	ConversationStageAddUserFood     ConversationStage = "add_user_food"
-	ConversationStageStart           ConversationStage = "start"
-	ConversationStageAddPlanSchedule ConversationStage = "add_plan_schedule"
+	ConversationStageNull            ConversationStage = "stage_null"
+	ConversationStageAddUserFood     ConversationStage = "stage_add_user_food"
+	ConversationStageStart           ConversationStage = "stage_start"
+	ConversationStageAddPlanSchedule ConversationStage = "stage_add_plan_schedule"
+	ConversationStageAddMacroTargets ConversationStage = "stage_add_macro_targets"
 )
 
 type UserState struct {
@@ -53,10 +54,6 @@ func (sm *StateManager) GetUserState(userID uint) *UserState {
 
 // SetUserState sets the conversation stage for a given user ID.
 //
-// States supported
-// * start
-// * add_user_food
-// * null -> Means awaiting no user input
 // The function takes a StateManager, a user ID and a conversation stage as
 // parameters. It locks the map of user IDs to UserState structs, sets the
 // conversation stage for the given user ID and then unlocks the map.

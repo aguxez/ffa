@@ -14,14 +14,14 @@ import (
 type CallbackData string
 
 const (
-	CallbackDataCreateMealPlan        CallbackData = "create_meal_plan"
-	CallbackDataAddDietaryPreference  CallbackData = "add_dietary_preference"
-	CallbackDataAddUserFood           CallbackData = "add_user_food"
-	CallbackDataAddPlanSchedule       CallbackData = "add_plan_schedule"
-	CallbackDataPlanScheduleWeekly    CallbackData = "plan_schedule_weekly"
-	CallbackDataPlanScheduleThreeDays CallbackData = "plan_schedule_three_days"
-	CallbackDataAddMacroTargets       CallbackData = "add_macro_targets"
-	CallbackDataBackToOptions         CallbackData = "back_to_options"
+	CallbackDataCreateMealPlan        CallbackData = "callback_create_meal_plan"
+	CallbackDataAddDietaryPreference  CallbackData = "callback_add_dietary_preference"
+	CallbackDataAddUserFood           CallbackData = "callback_add_user_food"
+	CallbackDataAddPlanSchedule       CallbackData = "callback_add_plan_schedule"
+	CallbackDataPlanScheduleWeekly    CallbackData = "callback_plan_schedule_weekly"
+	CallbackDataPlanScheduleThreeDays CallbackData = "callback_plan_schedule_three_days"
+	CallbackDataAddMacroTargets       CallbackData = "callback_add_macro_targets"
+	CallbackDataBackToOptions         CallbackData = "callback_back_to_options"
 )
 
 // Handler is the interface for all handlers
@@ -31,9 +31,10 @@ type Handler interface {
 
 // HandlerDependencies contains all dependencies needed by handlers
 type HandlerDependencies struct {
-	Agent        *agent.NutritionAgent
-	DB           *gorm.DB
-	StateManager *models.StateManager
+	NutritionAgent       *agent.NutritionAgent
+	NaturalLanguageAgent *agent.NaturalLanguageAgent
+	DB                   *gorm.DB
+	StateManager         *models.StateManager
 }
 
 // HandlerRegistry manages the registration of handlers

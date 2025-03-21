@@ -1,6 +1,6 @@
 package agent
 
-// NewPromptTemplate returns a string template for generating meal plans using a conversational agent.
+// NewNutritionPromptTemplate returns a string template for generating meal plans using a conversational agent.
 // The template provides a structured format for the agent to follow when interacting with users
 // as a personal nutritionist. It leverages historical meal plans and tool access to generate
 // comprehensive meal plans that meet user-defined macro targets, include diverse food options,
@@ -9,7 +9,7 @@ package agent
 // of five meals per day, including a protein shake, and provide weekday portions with daily macro
 // breakdowns. The response must be terminal-displayable, with explanations and preparations that
 // incorporate color compatibility.
-func NewPromptTemplate() string {
+func NewNutritionPromptTemplate() string {
 	return `
 	You are a personal nutritionist with access to historical meal plans and their outcomes.
 
@@ -47,4 +47,27 @@ func NewPromptTemplate() string {
 	}
 
 	Where "foodCategory" must be one of: breakfast, lunch, dinner, or snack.`
+}
+
+// NewMacroTargetsTemplate returns a string representing a template for a prompt
+// given to the LLM for parsing user-provided macronutrient targets.
+func NewMacroTargetsTemplate() string {
+	return `
+	Take this text and parse the macronutrients as given to you.
+
+	When generating a meal plan, follow these strict rules:
+	1. Always format your final answer as a valid JSON object
+	2. Your response MUST respect the JSON format you will be provided. If you encounter an error,
+			return an empty JSON object with the provided keys so it can be parsed.
+
+	Context:
+	{{.Input}}
+
+	{
+		"calories": number,
+		"protein": number,
+		"fat": number,
+		"carbs": number
+	}
+	`
 }

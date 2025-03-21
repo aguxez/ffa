@@ -20,7 +20,11 @@ func Connect() (*gorm.DB, error) {
 	}
 
 	log.Info().Msg("Connected to database. Checking if we need to run migrations...")
-	db.AutoMigrate(&User{}, &UserFood{})
+	db.AutoMigrate(
+		&User{},
+		&UserFood{},
+		&UserPlanSchedule{},
+	)
 
 	return db, nil
 }

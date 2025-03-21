@@ -9,7 +9,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// MealPlanHandler handles meal plan creation
+// BackToOptionsHandler handles the back to options button
 type BackToOptionsHandler struct {
 	deps *HandlerDependencies
 }
