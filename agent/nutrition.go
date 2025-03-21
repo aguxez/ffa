@@ -42,7 +42,7 @@ func NewNutritionAgent(llm *openai.LLM, state *models.StateManager) *NutritionAg
 //
 // The function will return an error if there was an issue with the LLM call or unmarshalling
 // the response.
-func (n *NutritionAgent) GenerateMealPlan(ctx context.Context, user database.User) (models.MealPlanResponse, error) {
+func (n *NutritionAgent) GenerateMealPlan(ctx context.Context, user *database.User) (models.MealPlanResponse, error) {
 	// More structured formatting of input to help the LLM
 	foodsStr := "Available Foods:\n"
 	for _, food := range user.Foods {
