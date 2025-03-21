@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/tmc/langchaingo/llms"
@@ -62,7 +61,7 @@ func (n *NutritionAgent) GenerateMealPlan(ctx context.Context, foods []database.
 	}
 
 	combinedInput := fmt.Sprintf("%s\n%s", foodsStr, targetsStr)
-	promptTemplate := prompts.NewPromptTemplate(NewPromptTemplate(), []string{"CombinedInput"})
+	promptTemplate := prompts.NewPromptTemplate(NewNutritionPromptTemplate(), []string{"CombinedInput"})
 	promptInput := map[string]any{
 		"CombinedInput": combinedInput,
 	}
@@ -81,7 +80,7 @@ func (n *NutritionAgent) GenerateMealPlan(ctx context.Context, foods []database.
 		return models.MealPlanResponse{}, err
 	}
 
-	jsonStr := extractJSON(output)
+	jsonStr := ExtractJSONFromResponse(output)
 
 	var parsedResponse models.MealPlanResponse
 	err = json.Unmarshal([]byte(jsonStr), &parsedResponse)
@@ -90,15 +89,4 @@ func (n *NutritionAgent) GenerateMealPlan(ctx context.Context, foods []database.
 	}
 
 	return parsedResponse, nil
-}
-
-// extractJSON finds and extracts JSON content from a string by removing the markup
-func extractJSON(s string) string {
-	var final string
-
-	final = strings.ReplaceAll(s, "\n", "")
-	final = strings.ReplaceAll(final, "```json", "")
-	final = strings.ReplaceAll(final, "```", "")
-
-	return final
 }

@@ -12,9 +12,9 @@ type User struct {
 	Foods        []UserFood
 	PlanSchedule *UserPlanSchedule `gorm:"default:NULL"`
 
-	Protein  *uint32 `gorm:"default:NULL"`
-	Fat      *uint32 `gorm:"default:NULL"`
-	Carbs    *uint32 `gorm:"default:NULL"`
+	Protein  *uint32 `gorm:"default:NULL;column:protein_grams"`
+	Fat      *uint32 `gorm:"default:NULL;column:fat_grams"`
+	Carbs    *uint32 `gorm:"default:NULL;column:carbs_grams"`
 	Calories *uint   `gorm:"default:NULL"`
 }
 

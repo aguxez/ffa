@@ -55,7 +55,7 @@ func (h *MealPlanHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tg
 	})
 
 	// Generate meal plan
-	plan, err := h.deps.Agent.GenerateMealPlan(ctx, userFoods)
+	plan, err := h.deps.NutritionAgent.GenerateMealPlan(ctx, userFoods)
 	if err != nil {
 		log.Err(err).Msg("Error generating meal plan")
 		ErrorResponse(ctx, bot, chatID, "There was an error generating the meal plan. This has been informed.")
