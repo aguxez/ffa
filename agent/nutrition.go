@@ -91,6 +91,7 @@ func (n *NutritionAgent) GenerateMealPlan(ctx context.Context, user *database.Us
 	var parsedResponse models.MealPlanResponse
 	err = json.Unmarshal([]byte(jsonStr), &parsedResponse)
 	if err != nil {
+		log.Debug().Msgf("Raw JSON: %s", jsonStr)
 		return models.MealPlanResponse{}, fmt.Errorf("unmarshalling response: %w", err)
 	}
 
