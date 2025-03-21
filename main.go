@@ -16,7 +16,7 @@ func main() {
 
 	db, err := database.Connect()
 	if err != nil {
-		log.Error().Msg(fmt.Sprint("Error connecting to database: %v", err.Error()))
+		log.Error().Msg(fmt.Sprintf("Error connecting to database: %v", err.Error()))
 	}
 
 	// Initialize state manager
