@@ -42,23 +42,27 @@ func NewNutritionAgent(llm *openai.LLM, state *models.StateManager) *NutritionAg
 //
 // The function will return an error if there was an issue with the LLM call or unmarshalling
 // the response.
-func (n *NutritionAgent) GenerateMealPlan(ctx context.Context, foods []database.UserFood) (models.MealPlanResponse, error) {
-	macrosDays := make([]models.MacroDay, 0)
-
+func (n *NutritionAgent) GenerateMealPlan(ctx context.Context, user database.User) (models.MealPlanResponse, error) {
 	// More structured formatting of input to help the LLM
 	foodsStr := "Available Foods:\n"
-	for _, food := range foods {
+	for _, food := range user.Foods {
 		foodsStr += fmt.Sprintf("- %s\n", food.Name)
 	}
 
 	var targetsStr string
-	if len(macrosDays) > 0 {
-		targetsStr := "Macro Targets:\n"
-		targetsStr += fmt.Sprintf("- Protein: %d g\n", macrosDays[0].Target.Protein)
-		targetsStr += fmt.Sprintf("- Carbs: %d g\n", macrosDays[0].Target.Carbs)
-		targetsStr += fmt.Sprintf("- Fat: %d g\n", macrosDays[0].Target.Fat)
-		targetsStr += fmt.Sprintf("- Calories: %d\n", macrosDays[0].Target.Calories)
+	targetsStr = "Macro Targets:\n"
+
+	// Using 'any' here because we have different types for the values
+	appendIfExists := func(name string, value any) {
+		if value != nil {
+			targetsStr += fmt.Sprintf("- %s: %d g\n", name, value)
+		}
 	}
+
+	appendIfExists("Protein", user.Protein)
+	appendIfExists("Carbs", user.Carbs)
+	appendIfExists("Fat", user.Fat)
+	appendIfExists("Calories", user.Calories)
 
 	combinedInput := fmt.Sprintf("%s\n%s", foodsStr, targetsStr)
 	promptTemplate := prompts.NewPromptTemplate(NewNutritionPromptTemplate(), []string{"CombinedInput"})
