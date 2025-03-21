@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/rs/zerolog/log"
 	"github.com/tmc/langchaingo/llms"
 	"github.com/tmc/langchaingo/llms/openai"
 	"github.com/tmc/langchaingo/prompts"
@@ -81,6 +82,7 @@ func (n *NutritionAgent) GenerateMealPlan(ctx context.Context, user *database.Us
 	// Temperature is overridden to promote more diversity in answers for a given input
 	output, err := n.llm.Call(ctxWithTimeout, prompt, llms.WithTemperature(1.5))
 	if err != nil {
+		log.Err(err).Msg("Error calling LLM for plan generation")
 		return models.MealPlanResponse{}, err
 	}
 
