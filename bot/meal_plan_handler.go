@@ -43,16 +43,10 @@ func (h *MealPlanHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tg
 	}
 
 	// Remove the markup button
-	if err := h.removeMarkup(ctx, bot, update); err != nil {
+	if err := h.removeMarkupAndEditMessage(ctx, bot, update); err != nil {
 		log.Err(err).Msg("Error removing markup")
 		return
 	}
-
-	// Inform user about generation
-	bot.SendMessage(ctx, &tgbot.SendMessageParams{
-		ChatID: chatID,
-		Text:   "I'm generating a plan for you now.",
-	})
 
 	// Generate meal plan
 	plan, err := h.deps.NutritionAgent.GenerateMealPlan(ctx, user)
@@ -76,22 +70,33 @@ func (h *MealPlanHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tg
 
 	// Send document
 	bot.SendDocument(ctx, &tgbot.SendDocumentParams{
-		ChatID: chatID,
+		ChatID:  chatID,
+		Caption: "Here is our recommended meal plan based on the schedule and information you have shared with us!",
 		Document: &tgmodels.InputFileUpload{
 			Filename: "personalized_meal_plan.pdf",
 			Data:     &doc,
+		},
+		ReplyMarkup: &tgmodels.InlineKeyboardMarkup{
+			InlineKeyboard: [][]tgmodels.InlineKeyboardButton{
+				{
+					{
+						Text:         "↼ Back to options",
+						CallbackData: string(CallbackDataBackToOptionsNoDelete),
+					},
+				},
+			},
 		},
 	})
 }
 
 // removeMarkup removes the inline keyboard markup
-func (h *MealPlanHandler) removeMarkup(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) error {
-	_, err := bot.EditMessageReplyMarkup(ctx, &tgbot.EditMessageReplyMarkupParams{
+func (h *MealPlanHandler) removeMarkupAndEditMessage(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) error {
+	// Edit the previous message's text to inform about plan generation
+	_, err := bot.EditMessageText(ctx, &tgbot.EditMessageTextParams{
 		ChatID:    update.CallbackQuery.Message.Message.Chat.ID,
 		MessageID: update.CallbackQuery.Message.Message.ID,
-		ReplyMarkup: &tgmodels.InlineKeyboardMarkup{
-			InlineKeyboard: [][]tgmodels.InlineKeyboardButton{},
-		},
+		Text:      "I'm generating a plan for you now. This can take a moment...",
 	})
+
 	return err
 }

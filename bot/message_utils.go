@@ -10,33 +10,33 @@ import (
 // welcome message with inline keyboard options to the chat.
 func InitialMenuMessageParams(chatID int64) *bot.SendMessageParams {
 	return &tgbot.SendMessageParams{
-		Text:   "I can help you create meal plans tailored for your dietary preferences.\n\nHere are some things you can do for your plans.",
+		Text:   "Create personalized meal plans based on your preferences.\n\nSelect an option to build your plan:",
 		ChatID: chatID,
 		ReplyMarkup: &tgmodels.InlineKeyboardMarkup{
 			InlineKeyboard: [][]tgmodels.InlineKeyboardButton{
 				{
 					{
-						Text:         "Add Macro Targets",
+						Text:         "Set Macros",
 						CallbackData: string(CallbackDataAddMacroTargets),
 					},
 					{
-						Text:         "Add dietary preference",
+						Text:         "Set dietary restrictions",
 						CallbackData: string(CallbackDataAddDietaryPreference),
 					},
 				},
 				{
 					{
-						Text:         "Add food",
+						Text:         "Add favorite foods",
 						CallbackData: string(CallbackDataAddUserFood),
 					},
 					{
-						Text:         "Add schedule",
+						Text:         "Set meal times",
 						CallbackData: string(CallbackDataAddPlanSchedule),
 					},
 				},
 				{
 					{
-						Text:         "Create test plan",
+						Text:         "Generate sample plan",
 						CallbackData: string(CallbackDataCreateMealPlan),
 					},
 				},

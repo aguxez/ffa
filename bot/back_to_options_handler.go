@@ -11,13 +11,15 @@ import (
 
 // BackToOptionsHandler handles the back to options button
 type BackToOptionsHandler struct {
-	deps *HandlerDependencies
+	deps                        *HandlerDependencies
+	shouldDeletePreviousMessage bool
 }
 
 // NewBackToOptionsHandler creates a new BackToOptionsHandler
-func NewBackToOptionsHandler(deps *HandlerDependencies) *BackToOptionsHandler {
+func NewBackToOptionsHandler(deps *HandlerDependencies, shouldDeletePreviousMessage bool) *BackToOptionsHandler {
 	return &BackToOptionsHandler{
-		deps: deps,
+		deps:                        deps,
+		shouldDeletePreviousMessage: shouldDeletePreviousMessage,
 	}
 }
 
@@ -30,18 +32,21 @@ func (h *BackToOptionsHandler) Handle(ctx context.Context, bot *tgbot.Bot, updat
 	// Reset user state
 	h.deps.StateManager.SetUserState(userID, models.ConversationStageStart)
 
-	// Delete the message that triggered this callback
-	_, err := bot.DeleteMessage(ctx, &tgbot.DeleteMessageParams{
-		ChatID:    chatID,
-		MessageID: update.CallbackQuery.Message.Message.ID,
-	})
-	if err != nil {
-		log.Err(err).Msg("Error deleting message")
-		return
+	// Delete the message that triggered this callback if necessary
+	if h.shouldDeletePreviousMessage {
+
+		_, err := bot.DeleteMessage(ctx, &tgbot.DeleteMessageParams{
+			ChatID:    chatID,
+			MessageID: update.CallbackQuery.Message.Message.ID,
+		})
+		if err != nil {
+			log.Err(err).Msg("Error deleting message")
+			return
+		}
 	}
 
 	// Send the initial menu message
-	_, err = bot.SendMessage(ctx, InitialMenuMessageParams(chatID))
+	_, err := bot.SendMessage(ctx, InitialMenuMessageParams(chatID))
 	if err != nil {
 		log.Err(err).Msg("Error sending initial menu message")
 	}
