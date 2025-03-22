@@ -95,8 +95,14 @@ func (s *BotService) RegisterHandlers() {
 		CallbackDataPlanScheduleWeekly:    NewPlanScheduleUpdateHandler(handlerDeps, 7),
 		CallbackDataPlanScheduleThreeDays: NewPlanScheduleUpdateHandler(handlerDeps, 3),
 		// We wat this command to always return to the 'main menu' so to speak
-		CallbackDataBackToOptions:   NewBackToOptionsHandler(handlerDeps),
-		CallbackDataAddMacroTargets: NewMacroTargetsHandler(handlerDeps),
+		CallbackDataBackToOptions: NewBackToOptionsHandler(handlerDeps, true),
+
+		// This one triggers the same event as `CallbackDataBackToOptions`
+		// but doesn't delete the previous state. This is important to maintain
+		// conversation context like if we send a meal plan to the user. We do not want
+		// the message to be deleted when they go back.
+		CallbackDataBackToOptionsNoDelete: NewBackToOptionsHandler(handlerDeps, false),
+		CallbackDataAddMacroTargets:       NewMacroTargetsHandler(handlerDeps),
 	}
 
 	for callbackData, handler := range callbackHandlers {

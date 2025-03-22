@@ -33,7 +33,7 @@ func (h *UserFoodHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tg
 	h.deps.StateManager.SetUserState(userID, models.ConversationStageAddUserFood)
 
 	// Send instructions
-	h.removeMarkupAndEditMessage(ctx, bot, update)
+	h.editMessage(ctx, bot, update)
 }
 
 // UserFoodMessageHandler handles processing food items from user messages
@@ -86,23 +86,15 @@ func (h *UserFoodMessageHandler) Handle(ctx context.Context, bot *tgbot.Bot, upd
 	})
 }
 
-// removeMarkupAndEditMessage removes the inline keyboard markup and edits the
+// editMessage removes the inline keyboard markup and edits the
 // previous message's text
-func (h *UserFoodHandler) removeMarkupAndEditMessage(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) error {
+func (h *UserFoodHandler) editMessage(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) error {
 	// Edits the previous message's text
 	_, err := bot.EditMessageText(ctx, &tgbot.EditMessageTextParams{
 		ChatID:    update.CallbackQuery.Message.Message.Chat.ID,
 		MessageID: update.CallbackQuery.Message.Message.ID,
-		Text:      `Sure! Send me some of the foods you enjoy so I can reference them. These items will be added to the ones you already have saved instead of replacing them.`,
+		Text:      `Share foods you enjoy to include in your meal plans. Any items you add will be combined with your existing saved favorites.`,
 	})
 
-	// Simply removes the options from the inline markup
-	_, err = bot.EditMessageReplyMarkup(ctx, &tgbot.EditMessageReplyMarkupParams{
-		ChatID:    update.CallbackQuery.Message.Message.Chat.ID,
-		MessageID: update.CallbackQuery.Message.Message.ID,
-		ReplyMarkup: &tgmodels.InlineKeyboardMarkup{
-			InlineKeyboard: [][]tgmodels.InlineKeyboardButton{},
-		},
-	})
 	return err
 }

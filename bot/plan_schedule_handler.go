@@ -44,7 +44,7 @@ func (h *PlanScheduleHandler) removeMarkupAndEditMessage(ctx context.Context, bo
 	_, err := bot.EditMessageText(ctx, &tgbot.EditMessageTextParams{
 		ChatID:    chatID,
 		MessageID: messageID,
-		Text:      "Please select an interval for your plan schedule.",
+		Text:      "Select an interval for your plan schedule.",
 	})
 	if err != nil {
 		log.Err(err).Msg("Error sending plan schedule message")

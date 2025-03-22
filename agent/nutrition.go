@@ -56,13 +56,13 @@ func (n *NutritionAgent) GenerateMealPlan(ctx context.Context, user *database.Us
 	// Using 'any' here because we have different types for the values
 	appendIfExists := func(name string, value any) {
 		if value != nil {
-			targetsStr += fmt.Sprintf("- %s: %d g\n", name, value)
+			targetsStr += fmt.Sprintf("- %s: %d\n", name, value)
 		}
 	}
 
-	appendIfExists("Protein", user.Protein)
-	appendIfExists("Carbs", user.Carbs)
-	appendIfExists("Fat", user.Fat)
+	appendIfExists("Protein (grams)", user.Protein)
+	appendIfExists("Carbs (grams)", user.Carbs)
+	appendIfExists("Fat (grams)", user.Fat)
 	appendIfExists("Calories", user.Calories)
 
 	combinedInput := fmt.Sprintf("%s\n%s", foodsStr, targetsStr)

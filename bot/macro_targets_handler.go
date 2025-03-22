@@ -33,21 +33,12 @@ func (h *MacroTargetsHandler) Handle(ctx context.Context, bot *tgbot.Bot, update
 	_, err := bot.EditMessageText(ctx, &tgbot.EditMessageTextParams{
 		ChatID:    update.CallbackQuery.Message.Message.Chat.ID,
 		MessageID: update.CallbackQuery.Message.Message.ID,
-		Text: `Great! Please send me your macros however you want, here are a few examples I can understand:
+		Text: `Enter your macro targets in any format:
+- carbs: 300g, protein: 150g, fat: 50g
+- calories: 2500
 
-carbs: 300g
-protein: 150g
-fat: 50g
-calories: 2500
-
-OR
-
-carbs 300 protein 150 fat 50 calories 500
-
-Just ensure that the name of the macro is followed by the amount!
-
-P.S. If you only want to set one of the macros; that's also possible. You do not need every macro to be set. Maybe you just want to set the calories, and that's valid. However, each plan will still include rough values for the rest of macros.
-		`,
+You can specify just some macros (e.g., only calories). All plans will include estimates for all nutritional values.
+`,
 	})
 	if err != nil {
 		log.Err(err).Msg("Error sending macro targets message")
