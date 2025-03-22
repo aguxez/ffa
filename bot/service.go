@@ -101,8 +101,9 @@ func (s *BotService) RegisterHandlers() {
 		// but doesn't delete the previous state. This is important to maintain
 		// conversation context like if we send a meal plan to the user. We do not want
 		// the message to be deleted when they go back.
-		CallbackDataBackToOptionsNoDelete: NewBackToOptionsHandler(handlerDeps, false),
-		CallbackDataAddMacroTargets:       NewMacroTargetsHandler(handlerDeps),
+		CallbackDataBackToOptionsNoDelete:  NewBackToOptionsHandler(handlerDeps, false),
+		CallbackDataAddMacroTargets:        NewMacroTargetsHandler(handlerDeps),
+		CallbackDataSetDietaryRestrictions: NewSetDietaryRestrictionsHandler(handlerDeps),
 	}
 
 	for callbackData, handler := range callbackHandlers {

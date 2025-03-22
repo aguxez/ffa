@@ -50,22 +50,20 @@ func (n *NutritionAgent) GenerateMealPlan(ctx context.Context, user *database.Us
 		foodsStr += fmt.Sprintf("- %s\n", food.Name)
 	}
 
-	var targetsStr string
-	targetsStr = "Macro Targets:\n"
+	// Appending macros
+	macrosStr := appendMacros(user)
 
-	// Using 'any' here because we have different types for the values
-	appendIfExists := func(name string, value any) {
-		if value != nil {
-			targetsStr += fmt.Sprintf("- %s: %d\n", name, value)
+	// Append dietary restrictions if any
+	var dietaryRestrictionsStr string
+	if user.DietaryRestrictions != nil {
+		dietaryRestrictionsStr += "Dietary Restrictions:\n"
+		for _, restriction := range *user.DietaryRestrictions {
+			dietaryRestrictionsStr += fmt.Sprintf("- %s\n", restriction.Name)
 		}
 	}
 
-	appendIfExists("Protein (grams)", user.Protein)
-	appendIfExists("Carbs (grams)", user.Carbs)
-	appendIfExists("Fat (grams)", user.Fat)
-	appendIfExists("Calories", user.Calories)
+	combinedInput := fmt.Sprintf("%s\n%s\n%s", foodsStr, macrosStr, dietaryRestrictionsStr)
 
-	combinedInput := fmt.Sprintf("%s\n%s", foodsStr, targetsStr)
 	promptTemplate := prompts.NewPromptTemplate(NewNutritionPromptTemplate(), []string{"CombinedInput"})
 	promptInput := map[string]any{
 		"CombinedInput": combinedInput,
@@ -96,4 +94,33 @@ func (n *NutritionAgent) GenerateMealPlan(ctx context.Context, user *database.Us
 	}
 
 	return parsedResponse, nil
+}
+
+// appendMacros formats and returns a string representing the user's macronutrient targets.
+// It includes protein, carbs, fat, and calorie information if they are set.
+// The function will append a title "Macro Targets:" if any of these values are present,
+// followed by each individual macronutrient and calorie count formatted as a list.
+func appendMacros(user *database.User) string {
+	var macrosStr string
+	if user.Protein != nil ||
+		user.Fat != nil ||
+		user.Carbs != nil ||
+		user.Calories == nil {
+
+		// Only append title if there is a value set
+		macrosStr = "Macro Targets:\n"
+	}
+	if user.Protein != nil {
+		macrosStr += fmt.Sprintf("- Protein (grams): %d\n", *user.Protein)
+	}
+	if user.Carbs != nil {
+		macrosStr += fmt.Sprintf("- Carbs (grams): %d\n", *user.Carbs)
+	}
+	if user.Fat != nil {
+		macrosStr += fmt.Sprintf("- Fat (grams): %d\n", *user.Fat)
+	}
+	if user.Calories != nil {
+		macrosStr += fmt.Sprintf("- Calories: %d\n", *user.Calories)
+	}
+	return macrosStr
 }

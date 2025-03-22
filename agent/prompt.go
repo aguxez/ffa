@@ -20,9 +20,12 @@ func NewNutritionPromptTemplate() string {
 			you are given.
 	3. Your response MUST respect the JSON format you will be provided. If you encounter an error,
 			return an empty JSON object with the provided keys so it can be parsed.
-	4. Do NOT use markdown for your string output
+	4. Do NOT use markdown for your string output. DO NOT add any other string other
+		than the JSON, otherwise you wil mess up the parsing of the response and this can
+		incur in monetary loss.
 	5. Be creative with your suggestions as long as they can be meal prepped.
 		 For the weekdays, this is crucial since the idea is to prepare in advance.
+	6. Take dietary restrictions into consideration. Only offer foods that respect them.
 
 	Context:
 	{{.CombinedInput}}
@@ -69,5 +72,24 @@ func NewMacroTargetsTemplate() string {
 		"fat": number,
 		"carbs": number
 	}
+	`
+}
+
+// NewDietaryRestrictionsTemplate returns a string representing a template for a prompt
+// given to the LLM for parsing user-provided dietary restrictions.
+func NewDietaryRestrictionsTemplate() string {
+	return `
+	Take this text and parse the dietary restrictions as given to you.
+
+	When generating a meal plan, follow these strict rules:
+	1. Always format your final answer as a valid JSON object
+	2. Your response MUST respect the JSON format you will be provided. If you encounter an error,
+			return an empty JSON object with the provided keys so it can be parsed.
+	3. The JSON is simply a list of strings, no object brackets
+
+	Context:
+	{{.Input}}
+
+	[string]
 	`
 }

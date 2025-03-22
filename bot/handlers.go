@@ -14,15 +14,15 @@ import (
 type CallbackData string
 
 const (
-	CallbackDataCreateMealPlan        CallbackData = "callback_create_meal_plan"
-	CallbackDataAddDietaryPreference  CallbackData = "callback_add_dietary_preference"
-	CallbackDataAddUserFood           CallbackData = "callback_add_user_food"
-	CallbackDataAddPlanSchedule       CallbackData = "callback_add_plan_schedule"
-	CallbackDataPlanScheduleWeekly    CallbackData = "callback_plan_schedule_weekly"
-	CallbackDataPlanScheduleThreeDays CallbackData = "callback_plan_schedule_three_days"
-	CallbackDataAddMacroTargets       CallbackData = "callback_add_macro_targets"
-	CallbackDataBackToOptions         CallbackData = "callback_back_to_options"
-	CallbackDataBackToOptionsNoDelete CallbackData = "callback_back_to_options_no_delete"
+	CallbackDataCreateMealPlan         CallbackData = "callback_create_meal_plan"
+	CallbackDataSetDietaryRestrictions CallbackData = "callback_set_dietary_restrictions"
+	CallbackDataAddUserFood            CallbackData = "callback_add_user_food"
+	CallbackDataAddPlanSchedule        CallbackData = "callback_add_plan_schedule"
+	CallbackDataPlanScheduleWeekly     CallbackData = "callback_plan_schedule_weekly"
+	CallbackDataPlanScheduleThreeDays  CallbackData = "callback_plan_schedule_three_days"
+	CallbackDataAddMacroTargets        CallbackData = "callback_add_macro_targets"
+	CallbackDataBackToOptions          CallbackData = "callback_back_to_options"
+	CallbackDataBackToOptionsNoDelete  CallbackData = "callback_back_to_options_no_delete"
 )
 
 // Handler is the interface for all handlers

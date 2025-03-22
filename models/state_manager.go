@@ -7,11 +7,12 @@ import (
 type ConversationStage string
 
 const (
-	ConversationStageNull            ConversationStage = "stage_null"
-	ConversationStageAddUserFood     ConversationStage = "stage_add_user_food"
-	ConversationStageStart           ConversationStage = "stage_start"
-	ConversationStageAddPlanSchedule ConversationStage = "stage_add_plan_schedule"
-	ConversationStageAddMacroTargets ConversationStage = "stage_add_macro_targets"
+	ConversationStageNull                   ConversationStage = "stage_null"
+	ConversationStageAddUserFood            ConversationStage = "stage_add_user_food"
+	ConversationStageStart                  ConversationStage = "stage_start"
+	ConversationStageAddPlanSchedule        ConversationStage = "stage_add_plan_schedule"
+	ConversationStageAddMacroTargets        ConversationStage = "stage_add_macro_targets"
+	ConversationStageSetDietaryRestrictions ConversationStage = "stage_set_dietary_restrictions"
 )
 
 type UserState struct {
