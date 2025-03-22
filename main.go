@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"net/http"
 
 	"github.com/aguxez/ffa/bot"
 	"github.com/aguxez/ffa/database"
@@ -23,13 +22,7 @@ func main() {
 	sm := models.NewStateManager()
 
 	// Start the bot
-	go func() {
-		if err := bot.Init(sm, db); err != nil {
-			log.Err(err).Msg("Error initializing bot")
-		}
-	}()
-
-	// Start HTTP server
-	log.Info().Msg("Server starting on :8080...")
-	log.Err(http.ListenAndServe(":8080", nil)).Msg("Error starting server")
+	if err := bot.Init(sm, db); err != nil {
+		log.Err(err).Msg("Error initializing bot")
+	}
 }

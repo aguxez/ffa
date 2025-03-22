@@ -28,15 +28,15 @@ func (h *MealPlanHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tg
 	chatID := update.CallbackQuery.Message.Message.Chat.ID
 	userID := uint(update.CallbackQuery.From.ID)
 
-	// Load user foods
-	userFoods, err := database.GetUserFoods(h.deps.DB, userID)
+	// Load user and associations
+	user, err := database.GetUser(h.deps.DB, userID)
 	if err != nil {
 		log.Err(err).Msg("Error getting user foods")
 		ErrorResponse(ctx, bot, chatID, "Failed to retrieve your food preferences.")
 		return
 	}
 
-	if len(userFoods) == 0 {
+	if len(user.Foods) == 0 {
 		log.Debug().Uint("user_id", userID).Msg("No user foods found")
 		ErrorResponse(ctx, bot, chatID, "Please add your food preferences first.")
 		return
@@ -55,7 +55,7 @@ func (h *MealPlanHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tg
 	})
 
 	// Generate meal plan
-	plan, err := h.deps.NutritionAgent.GenerateMealPlan(ctx, userFoods)
+	plan, err := h.deps.NutritionAgent.GenerateMealPlan(ctx, user)
 	if err != nil {
 		log.Err(err).Msg("Error generating meal plan")
 		ErrorResponse(ctx, bot, chatID, "There was an error generating the meal plan. This has been informed.")
