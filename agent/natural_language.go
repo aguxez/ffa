@@ -32,17 +32,24 @@ func NewNaturalLanguageAgent(llm *openai.LLM) *NaturalLanguageAgent {
 	}
 }
 
-// ParseMacroTargetsMessage processes a message containing macro nutrient targets.
-func (a *NaturalLanguageAgent) ParseMacroTargetsMessage(ctx context.Context, message string) (database.UserMacrosPayload, error) {
+// ParseMessage is a generic function to process different types of natural language messages
+func ParseMessage[T any](
+	ctx context.Context,
+	a *NaturalLanguageAgent,
+	message string,
+	templateFunc func() string,
+) (T, error) {
+	var result T
+
 	// Call the LLM to process the message
-	promptTemplate := prompts.NewPromptTemplate(NewMacroTargetsTemplate(), []string{"Input"})
+	promptTemplate := prompts.NewPromptTemplate(templateFunc(), []string{"Input"})
 	promptInput := map[string]any{
 		"Input": message,
 	}
 
 	prompt, err := promptTemplate.Format(promptInput)
 	if err != nil {
-		return database.UserMacrosPayload{}, err
+		return result, err
 	}
 
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
@@ -50,17 +57,42 @@ func (a *NaturalLanguageAgent) ParseMacroTargetsMessage(ctx context.Context, mes
 
 	output, err := a.llm.Call(ctxWithTimeout, prompt)
 	if err != nil {
-		return database.UserMacrosPayload{}, err
+		return result, err
 	}
 
 	jsonStr := ExtractJSONFromResponse(output)
 
-	// Parse the output into a database.UserMacrosPayload
-	var parsedResponse database.UserMacrosPayload
-	err = json.Unmarshal([]byte(jsonStr), &parsedResponse)
+	// Parse the output into the generic type T
+	err = json.Unmarshal([]byte(jsonStr), &result)
 	if err != nil {
-		return database.UserMacrosPayload{}, fmt.Errorf("unmarshalling response: %w", err)
+		return result, fmt.Errorf("unmarshalling response: %w", err)
 	}
 
-	return parsedResponse, nil
+	return result, nil
+}
+
+// ParseMacroTargetsMessage processes a message containing macro nutrient targets
+func (a *NaturalLanguageAgent) ParseMacroTargetsMessage(
+	ctx context.Context,
+	message string,
+) (database.UserMacrosPayload, error) {
+	return ParseMessage[database.UserMacrosPayload](
+		ctx,
+		a,
+		message,
+		NewMacroTargetsTemplate,
+	)
+}
+
+// ParseDietaryRestrictionsMessage processes a message containing dietary restrictions
+func (a *NaturalLanguageAgent) ParseDietaryRestrictionsMessage(
+	ctx context.Context,
+	message string,
+) (database.UserDietaryRestrictionsPayload, error) {
+	return ParseMessage[database.UserDietaryRestrictionsPayload](
+		ctx,
+		a,
+		message,
+		NewDietaryRestrictionsTemplate,
+	)
 }

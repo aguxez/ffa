@@ -95,7 +95,7 @@ func (h *MealPlanHandler) removeMarkupAndEditMessage(ctx context.Context, bot *t
 	_, err := bot.EditMessageText(ctx, &tgbot.EditMessageTextParams{
 		ChatID:    update.CallbackQuery.Message.Message.Chat.ID,
 		MessageID: update.CallbackQuery.Message.Message.ID,
-		Text:      "I'm generating a plan for you now. This can take a moment...",
+		Text:      "I'm generating a plan for you now. This can take a moment.",
 	})
 
 	return err

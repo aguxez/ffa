@@ -21,7 +21,7 @@ func InitialMenuMessageParams(chatID int64) *bot.SendMessageParams {
 					},
 					{
 						Text:         "Set dietary restrictions",
-						CallbackData: string(CallbackDataAddDietaryPreference),
+						CallbackData: string(CallbackDataSetDietaryRestrictions),
 					},
 				},
 				{

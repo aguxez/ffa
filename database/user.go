@@ -12,10 +12,11 @@ type User struct {
 	Foods        []UserFood
 	PlanSchedule *UserPlanSchedule `gorm:"default:NULL"`
 
-	Protein  *uint32 `gorm:"default:NULL;column:protein_grams"`
-	Fat      *uint32 `gorm:"default:NULL;column:fat_grams"`
-	Carbs    *uint32 `gorm:"default:NULL;column:carbs_grams"`
-	Calories *uint   `gorm:"default:NULL"`
+	Protein             *uint32 `gorm:"default:NULL;column:protein_grams"`
+	Fat                 *uint32 `gorm:"default:NULL;column:fat_grams"`
+	Carbs               *uint32 `gorm:"default:NULL;column:carbs_grams"`
+	Calories            *uint   `gorm:"default:NULL"`
+	DietaryRestrictions *[]UserDietaryRestriction
 }
 
 type UserFood struct {
@@ -33,4 +34,11 @@ type UserPlanSchedule struct {
 	IntervalDays      uint      `gorm:"not null"`
 	StartDate         time.Time `gorm:"not null"`
 	LastExecutionDate *time.Time
+}
+
+type UserDietaryRestriction struct {
+	gorm.Model
+
+	UserID uint   `gorm:"uniqueIndex:user_dietary_restrictions_user_id_name_idx;constraint:OnDelete:CASCADE;not null"`
+	Name   string `gorm:"uniqueIndex:user_dietary_restrictions_user_id_name_idx;not null"`
 }
