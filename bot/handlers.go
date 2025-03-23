@@ -23,6 +23,7 @@ const (
 	CallbackDataAddMacroTargets        CallbackData = "callback_add_macro_targets"
 	CallbackDataBackToOptions          CallbackData = "callback_back_to_options"
 	CallbackDataBackToOptionsNoDelete  CallbackData = "callback_back_to_options_no_delete"
+	CallbackDataSetBodyWeight          CallbackData = "callback_set_body_weight"
 )
 
 // Handler is the interface for all handlers

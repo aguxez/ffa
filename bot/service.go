@@ -104,6 +104,7 @@ func (s *BotService) RegisterHandlers() {
 		CallbackDataBackToOptionsNoDelete:  NewBackToOptionsHandler(handlerDeps, false),
 		CallbackDataAddMacroTargets:        NewMacroTargetsHandler(handlerDeps),
 		CallbackDataSetDietaryRestrictions: NewSetDietaryRestrictionsHandler(handlerDeps),
+		CallbackDataSetBodyWeight:          NewSetBodyWeightHandler(handlerDeps),
 	}
 
 	for callbackData, handler := range callbackHandlers {

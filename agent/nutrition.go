@@ -62,7 +62,19 @@ func (n *NutritionAgent) GenerateMealPlan(ctx context.Context, user *database.Us
 		}
 	}
 
-	combinedInput := fmt.Sprintf("%s\n%s\n%s", foodsStr, macrosStr, dietaryRestrictionsStr)
+	// Append user's body weight if set
+	var weightStr string
+	if user.Weight != nil {
+		weightStr += fmt.Sprintf("Body Weight (kg): %d\n", *user.Weight)
+	}
+
+	combinedInput := fmt.Sprintf(
+		"%s\n%s\n%s\n%s",
+		foodsStr,
+		macrosStr,
+		dietaryRestrictionsStr,
+		weightStr,
+	)
 
 	promptTemplate := prompts.NewPromptTemplate(NewNutritionPromptTemplate(), []string{"CombinedInput"})
 	promptInput := map[string]any{
