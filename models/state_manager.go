@@ -13,6 +13,7 @@ const (
 	ConversationStageAddPlanSchedule        ConversationStage = "stage_add_plan_schedule"
 	ConversationStageAddMacroTargets        ConversationStage = "stage_add_macro_targets"
 	ConversationStageSetDietaryRestrictions ConversationStage = "stage_set_dietary_restrictions"
+	ConversationStageSetBodyWeight          ConversationStage = "stage_set_body_weight"
 )
 
 type UserState struct {

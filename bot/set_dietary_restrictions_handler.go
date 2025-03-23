@@ -10,7 +10,6 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// SetDietaryRestrictionsHandler handles the /start command
 type SetDietaryRestrictionsHandler struct {
 	deps *HandlerDependencies
 }
@@ -44,7 +43,6 @@ func (h *SetDietaryRestrictionsHandler) Handle(ctx context.Context, bot *tgbot.B
 	}
 }
 
-// SetDietaryRestrictionsMessageHandler handles the /start command
 type SetDietaryRestrictionsMessageHandler struct {
 	deps *HandlerDependencies
 }
@@ -65,7 +63,7 @@ func (h *SetDietaryRestrictionsMessageHandler) Handle(ctx context.Context, bot *
 	messageTxt := update.Message.Text
 
 	// Set user state
-	h.deps.StateManager.SetUserState(userID, models.ConversationStageSetDietaryRestrictions)
+	h.deps.StateManager.SetUserState(userID, models.ConversationStageNull)
 
 	// Process the message with the LLM
 	userDietaryRestrictions, err := h.deps.NaturalLanguageAgent.ParseDietaryRestrictionsMessage(ctx, messageTxt)

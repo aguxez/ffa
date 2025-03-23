@@ -17,6 +17,7 @@ type User struct {
 	Carbs               *uint32 `gorm:"default:NULL;column:carbs_grams"`
 	Calories            *uint   `gorm:"default:NULL"`
 	DietaryRestrictions *[]UserDietaryRestriction
+	Weight              *float64 `gorm:"default:NULL"`
 }
 
 type UserFood struct {

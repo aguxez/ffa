@@ -36,6 +36,12 @@ func InitialMenuMessageParams(chatID int64) *bot.SendMessageParams {
 				},
 				{
 					{
+						Text:         "Set body weight",
+						CallbackData: string(CallbackDataSetBodyWeight),
+					},
+				},
+				{
+					{
 						Text:         "Generate sample plan",
 						CallbackData: string(CallbackDataCreateMealPlan),
 					},
