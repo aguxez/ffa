@@ -1,14 +1,28 @@
 package agent
 
-import "strings"
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
 
-// ExtractJSONFromResponse finds and extracts JSON content from a string by removing the markup
-func ExtractJSONFromResponse(s string) string {
-	var final string
+	"github.com/rs/zerolog/log"
+)
 
-	final = strings.ReplaceAll(s, "\n", "")
-	final = strings.ReplaceAll(final, "```json", "")
-	final = strings.ReplaceAll(final, "```", "")
+// ParseJSONFromResponse parses a JSON response from the LLM. The response will be
+// stripped of any newline characters and any lines that start with "
+func ParseJSONFromResponse[T any](s string) (T, error) {
+	var extractedJSON string
 
-	return final
+	extractedJSON = strings.ReplaceAll(s, "\n", "")
+	extractedJSON = strings.ReplaceAll(extractedJSON, "```json", "")
+	extractedJSON = strings.ReplaceAll(extractedJSON, "```", "")
+
+	var parsedResponse T
+	err := json.Unmarshal([]byte(extractedJSON), &parsedResponse)
+	if err != nil {
+		log.Debug().Msgf("Raw JSON: %s", extractedJSON)
+		return parsedResponse, fmt.Errorf("failed to unmarshal JSON: %w", err)
+	}
+
+	return parsedResponse, nil
 }
