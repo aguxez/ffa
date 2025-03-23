@@ -102,9 +102,6 @@ func GenerateDocFromMealPlan(mealPlan models.MealPlanResponse) (bytes.Buffer, er
 
 		=== Dinner
 		%s
-
-		#line(length: 30em)
-		Remember to double check and adapt the instructions in this document as it might contain errors or not be extremely accurate for your situation. Specifically in the serving sizes and macros.
 		`,
 		mealPlan.PlanExplanation,
 		planByCategory["breakfast"],

@@ -6,6 +6,7 @@ import (
 	"github.com/aguxez/ffa/bot"
 	"github.com/aguxez/ffa/database"
 	"github.com/aguxez/ffa/models"
+	_ "github.com/joho/godotenv/autoload"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )

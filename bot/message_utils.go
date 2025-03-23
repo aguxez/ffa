@@ -30,15 +30,13 @@ func InitialMenuMessageParams(chatID int64) *bot.SendMessageParams {
 						CallbackData: string(CallbackDataAddUserFood),
 					},
 					{
-						Text:         "Set meal times",
-						CallbackData: string(CallbackDataAddPlanSchedule),
-					},
-				},
-				{
-					{
 						Text:         "Set body weight",
 						CallbackData: string(CallbackDataSetBodyWeight),
 					},
+					// {
+					// 	Text:         "Set meal times",
+					// 	CallbackData: string(CallbackDataAddPlanSchedule),
+					// },
 				},
 				{
 					{
