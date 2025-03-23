@@ -93,3 +93,45 @@ func NewDietaryRestrictionsTemplate() string {
 	[string]
 	`
 }
+
+// NewPlanShoopingListTemplate returns a string representing a template for a prompt
+// given to the LLM for generating a shopping list from a list of foods.
+func NewPlanShoopingListTemplate() string {
+	return `
+	Here you have some foods, read them all and create a shopping list for all of them.
+
+	When generating a meal plan, follow these strict rules:
+	1. Always format your final answer as a valid JSON object
+	2. Your response MUST respect the JSON format you will be provided. If you encounter an error,
+			return an empty JSON object with the provided keys so it can be parsed.
+	3. Do not say anything else other than the JSON, otherwise you wil mess up the parsing of
+		the response and this can incur in monetary loss.
+
+	Context:
+	{{.Input}}
+
+	[
+		{
+			"foodGroup": string,
+			"foods": [string]
+		}
+	]
+
+	Example response for each item so you have an idea of the expected output:
+
+	[
+		{
+			"foodGroup": "Protein",
+			"foods": ["Lean Meat", "Chicken Breast", "Salmon"]
+		},
+		{
+			"foodGroup": "Carbs",
+			"foods": ["Brown Rice", "Quinoa", "Oatmeal"]
+		},
+		{
+			"foodGroup": "Fruits",
+			"foods": ["Bananas", "Apples"]
+		}
+	]
+	`
+}

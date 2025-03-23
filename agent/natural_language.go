@@ -2,8 +2,6 @@ package agent
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/aguxez/ffa/database"
@@ -60,15 +58,7 @@ func ParseMessage[T any](
 		return result, err
 	}
 
-	jsonStr := ExtractJSONFromResponse(output)
-
-	// Parse the output into the generic type T
-	err = json.Unmarshal([]byte(jsonStr), &result)
-	if err != nil {
-		return result, fmt.Errorf("unmarshalling response: %w", err)
-	}
-
-	return result, nil
+	return ParseJSONFromResponse[T](output)
 }
 
 // ParseMacroTargetsMessage processes a message containing macro nutrient targets
