@@ -32,7 +32,7 @@ type UserPlanSchedule struct {
 
 	UserID uint `gorm:"uniqueIndex;constraint:OnDelete:CASCADE;not null"`
 
-	IntervalDays      uint      `gorm:"not null"`
+	IntervalDays      uint      `gorm:"not null;default:5"`
 	StartDate         time.Time `gorm:"not null"`
 	LastExecutionDate *time.Time
 }

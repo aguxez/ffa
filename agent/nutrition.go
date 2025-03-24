@@ -92,12 +92,19 @@ func (n *NutritionAgent) generateMealPlanFromLLM(ctx context.Context, user *data
 		weightStr += fmt.Sprintf("Body Weight (kg): %d\n", *user.Weight)
 	}
 
+	// Append the number of days the plan should be for
+	var planDurationDays string
+	if user.PlanSchedule != nil {
+		planDurationDays += fmt.Sprintf("Plan Duration (days): %d\n", user.PlanSchedule.IntervalDays)
+	}
+
 	combinedInput := fmt.Sprintf(
-		"%s\n%s\n%s\n%s",
+		"%s\n%s\n%s\n%s\n%s",
 		foodsStr,
 		macrosStr,
 		dietaryRestrictionsStr,
 		weightStr,
+		planDurationDays,
 	)
 
 	promptTemplate := prompts.NewPromptTemplate(NewNutritionPromptTemplate(), []string{"CombinedInput"})

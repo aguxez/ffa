@@ -6,7 +6,7 @@ import "gorm.io/gorm"
 //
 // The function takes a pointer to a gorm.DB and a userID as parameters.
 // It queries the database for a user with the specified userID and preloads
-// the associated Foods and DietaryRestrictions. It returns a pointer to the
+// some relevant associations. It returns a pointer to the
 // User and an error if there was an issue during the query.
 
 func GetUser(db *gorm.DB, userID uint) (*User, error) {
@@ -15,6 +15,7 @@ func GetUser(db *gorm.DB, userID uint) (*User, error) {
 		Where("id = ?", userID).
 		Preload("Foods").
 		Preload("DietaryRestrictions").
+		Preload("PlanSchedule").
 		First(&user).Error
 
 	return &user, err

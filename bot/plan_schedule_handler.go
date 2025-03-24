@@ -40,26 +40,16 @@ func (h *PlanScheduleHandler) removeMarkupAndEditMessage(ctx context.Context, bo
 	chatID := update.CallbackQuery.Message.Message.Chat.ID
 	messageID := update.CallbackQuery.Message.Message.ID
 
-	// Edit the message's text
+	// Edit the message's markup
 	_, err := bot.EditMessageText(ctx, &tgbot.EditMessageTextParams{
 		ChatID:    chatID,
 		MessageID: messageID,
-		Text:      "Select an interval for your plan schedule.",
-	})
-	if err != nil {
-		log.Err(err).Msg("Error sending plan schedule message")
-		return
-	}
-
-	// Edit the message's markup
-	_, err = bot.EditMessageReplyMarkup(ctx, &tgbot.EditMessageReplyMarkupParams{
-		ChatID:    chatID,
-		MessageID: messageID,
+		Text:      "Select how often your plans should be for.",
 		ReplyMarkup: &tgmodels.InlineKeyboardMarkup{
 			InlineKeyboard: [][]tgmodels.InlineKeyboardButton{
 				{
 					{
-						Text:         "Weekly",
+						Text:         "Five days",
 						CallbackData: string(CallbackDataPlanScheduleWeekly),
 					},
 					{
@@ -117,16 +107,6 @@ func (h *PlanScheduleUpdateHandler) removeMarkupAndEditMessage(ctx context.Conte
 		ChatID:    chatID,
 		MessageID: messageID,
 		Text:      "Successfully updated your plan schedule!",
-	})
-	if err != nil {
-		log.Err(err).Msg("Error sending plan schedule message")
-		return
-	}
-
-	// Edit the message's markup
-	_, err = bot.EditMessageReplyMarkup(ctx, &tgbot.EditMessageReplyMarkupParams{
-		ChatID:    chatID,
-		MessageID: messageID,
 		ReplyMarkup: &tgmodels.InlineKeyboardMarkup{
 			InlineKeyboard: [][]tgmodels.InlineKeyboardButton{
 				{
@@ -140,5 +120,6 @@ func (h *PlanScheduleUpdateHandler) removeMarkupAndEditMessage(ctx context.Conte
 	})
 	if err != nil {
 		log.Err(err).Msg("Error sending plan schedule message")
+		return
 	}
 }
