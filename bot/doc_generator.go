@@ -20,8 +20,8 @@ func GenerateDocFromMealPlan(mealPlan models.CompleteMealPlan) (bytes.Buffer, er
 	for _, food := range mealPlan.Plan {
 		formattedItem := fmt.Sprintf(
 			`
-				"%s", "%s", "%s", "%s",
-				`, food.Food, food.Weight, food.Macros, food.FoodExplanation,
+				"%s", "%s", "%s",
+				`, food.Food, food.Macros, food.FoodExplanation,
 		)
 		switch food.FoodCategory {
 		case "breakfast":
@@ -110,37 +110,37 @@ func GenerateDocFromMealPlan(mealPlan models.CompleteMealPlan) (bytes.Buffer, er
 		%s
 		== Breakfast
 		#table(
-			columns: (auto, auto, auto, auto),
+			columns: (auto, auto, auto),
 			align: horizon,
 			table.header(
-				[*Food*], [*Weight*], [*Macros*], [*Explanation*]
+				[*Food*], [*Macros*], [*Explanation*]
 			),
 			%s
 		)
 		== Lunch
 		#table(
-			columns: (auto, auto, auto, auto),
+			columns: (auto, auto, auto),
 			align: horizon,
 			table.header(
-				[*Food*], [*Weight*], [*Macros*], [*Explanation*]
+				[*Food*], [*Macros*], [*Explanation*]
 			),
 			%s
 		)
 		== Dinner
 		#table(
-			columns: (auto, auto, auto, auto),
+			columns: (auto, auto, auto),
 			align: horizon,
 			table.header(
-				[*Food*], [*Weight*], [*Macros*], [*Explanation*]
+				[*Food*], [*Macros*], [*Explanation*]
 			),
 			%s
 		)
 		== Snack
 		#table(
-			columns: (auto, auto, auto, auto),
+			columns: (auto, auto, auto),
 			align: horizon,
 			table.header(
-				[*Food*], [*Weight*], [*Macros*], [*Explanation*]
+				[*Food*], [*Macros*], [*Explanation*]
 			),
 			%s
 		)

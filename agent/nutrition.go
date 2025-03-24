@@ -47,6 +47,18 @@ func (n *NutritionAgent) GenerateMealPlan(ctx context.Context, user *database.Us
 		return models.CompleteMealPlan{}, err
 	}
 
+	// Then ask for a meal plan explanation
+	explanationResponse, err := n.generateMealPlanExplanationFromLLM(ctx, mealResponse)
+	if err != nil {
+		return models.CompleteMealPlan{}, err
+	}
+
+	// Then ask for a meal plan preparation
+	preparationResponse, err := n.generateMealPlanPreparationFromLLM(ctx, mealResponse)
+	if err != nil {
+		return models.CompleteMealPlan{}, err
+	}
+
 	// Then create the shopping list for this plan
 	shoppingList, err := n.generateMealPlanShoppingListfromLLM(ctx, mealResponse.Plan)
 	if err != nil {
@@ -54,8 +66,10 @@ func (n *NutritionAgent) GenerateMealPlan(ctx context.Context, user *database.Us
 	}
 
 	return models.CompleteMealPlan{
-		MealPlanResponse: mealResponse,
-		ShoppingList:     shoppingList,
+		MealPlan:            mealResponse,
+		MealPlanExplanation: explanationResponse,
+		MealPlanPreparation: preparationResponse,
+		ShoppingList:        shoppingList,
 	}, nil
 }
 
@@ -65,7 +79,7 @@ func (n *NutritionAgent) GenerateMealPlan(ctx context.Context, user *database.Us
 // It formats the input into a structured prompt and calls the LLM to generate a meal plan.
 //
 // The function will return an error if there was an issue with the LLM call or unmarshalling the response.
-func (n *NutritionAgent) generateMealPlanFromLLM(ctx context.Context, user *database.User) (models.MealPlanResponse, error) {
+func (n *NutritionAgent) generateMealPlanFromLLM(ctx context.Context, user *database.User) (models.MealPlan, error) {
 	log.Debug().Msg("Generating meal plan from LLM")
 
 	// More structured formatting of input to help the LLM
@@ -114,7 +128,7 @@ func (n *NutritionAgent) generateMealPlanFromLLM(ctx context.Context, user *data
 
 	prompt, err := promptTemplate.Format(promptInput)
 	if err != nil {
-		return models.MealPlanResponse{}, fmt.Errorf("formatting prompt: %w", err)
+		return models.MealPlan{}, fmt.Errorf("formatting prompt: %w", err)
 	}
 
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, 120*time.Second)
@@ -124,10 +138,65 @@ func (n *NutritionAgent) generateMealPlanFromLLM(ctx context.Context, user *data
 	output, err := n.llm.Call(ctxWithTimeout, prompt, llms.WithTemperature(1.5))
 	if err != nil {
 		log.Err(err).Msg("Error calling LLM for plan generation")
-		return models.MealPlanResponse{}, err
+		return models.MealPlan{}, err
 	}
 
-	return ParseJSONFromResponse[models.MealPlanResponse](output)
+	return ParseJSONFromResponse[models.MealPlan](output)
+}
+
+// generateMealPlanExplanationFromLLM generates a comprehensive explanation for a given meal plan.
+// It formats the input meal plan into a structured prompt and calls the LLM to generate the explanation.
+// The function will return an error if there was an issue with the LLM call or unmarshalling the response.
+func (n *NutritionAgent) generateMealPlanExplanationFromLLM(ctx context.Context, mealPlan models.MealPlan) (models.MealPlanExplanation, error) {
+	log.Debug().Msg("Generating meal plan explanation from LLM")
+
+	promptTemplate := prompts.NewPromptTemplate(NewMealPlanExplanationTemplate(), []string{"PlanFromChain1"})
+	promptInput := map[string]any{
+		"PlanFromChain1": mealPlan.Plan,
+	}
+
+	prompt, err := promptTemplate.Format(promptInput)
+	if err != nil {
+		return models.MealPlanExplanation{}, fmt.Errorf("formatting prompt: %w", err)
+	}
+
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, 120*time.Second)
+	defer cancel()
+
+	// Temperature is overridden to promote more diversity in answers for a given input
+	output, err := n.llm.Call(ctxWithTimeout, prompt, llms.WithModel(string(LLMModelGemini)))
+	if err != nil {
+		log.Err(err).Msg("Error calling LLM for plan explanation")
+		return models.MealPlanExplanation{}, err
+	}
+
+	return ParseJSONFromResponse[models.MealPlanExplanation](output)
+}
+
+func (n *NutritionAgent) generateMealPlanPreparationFromLLM(ctx context.Context, mealPlan models.MealPlan) (models.MealPlanPreparation, error) {
+	log.Debug().Msg("Generating meal plan preparation from LLM")
+
+	promptTemplate := prompts.NewPromptTemplate(NewMealPlanPreparationTemplate(), []string{"PlanFromChain1"})
+	promptInput := map[string]any{
+		"PlanFromChain1": mealPlan.Plan,
+	}
+
+	prompt, err := promptTemplate.Format(promptInput)
+	if err != nil {
+		return models.MealPlanPreparation{}, fmt.Errorf("formatting prompt: %w", err)
+	}
+
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, 120*time.Second)
+	defer cancel()
+
+	// Temperature is overridden to promote more diversity in answers for a given input
+	output, err := n.llm.Call(ctxWithTimeout, prompt, llms.WithModel(string(LLMModelGemini)))
+	if err != nil {
+		log.Err(err).Msg("Error calling LLM for plan explanation")
+		return models.MealPlanPreparation{}, err
+	}
+
+	return ParseJSONFromResponse[models.MealPlanPreparation](output)
 }
 
 // appendMacros formats and returns a string representing the user's macronutrient targets.
@@ -176,7 +245,7 @@ func (n *NutritionAgent) generateMealPlanShoppingListfromLLM(ctx context.Context
 
 	combinedInput := fmt.Sprintf("%s\n", foodsStr)
 
-	promptTemplate := prompts.NewPromptTemplate(NewPlanShoopingListTemplate(), []string{"Input"})
+	promptTemplate := prompts.NewPromptTemplate(NewMealPlanShoppingListTemplate(), []string{"Input"})
 	promptInput := map[string]any{
 		"Input": combinedInput,
 	}
@@ -186,7 +255,7 @@ func (n *NutritionAgent) generateMealPlanShoppingListfromLLM(ctx context.Context
 		return []models.MealPlanShoppingList{}, fmt.Errorf("formatting prompt: %w", err)
 	}
 
-	ctxWithTimeout, cancel := context.WithTimeout(ctx, 15*time.Second)
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, 120*time.Second)
 	defer cancel()
 
 	// Override the model we setup initially for a fast and more affordable option

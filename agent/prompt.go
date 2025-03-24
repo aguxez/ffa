@@ -26,6 +26,7 @@ func NewNutritionPromptTemplate() string {
 	5. Be creative with your suggestions as long as they can be meal prepped.
 		 For the weekdays, this is crucial since the idea is to prepare in advance.
 	6. Take dietary restrictions into consideration. Only offer foods that respect them.
+
 	Context:
 	{{.CombinedInput}}
 
@@ -34,21 +35,74 @@ func NewNutritionPromptTemplate() string {
 			"plan": [
 					{
 							"food": "Example Food",
-							"weight": "100g",
 							"macros": "P: 20g, C: 30g, F: 10g, Cal: 290",
 							"foodExplanation": "Short explanation",
 							"foodCategory": "breakfast"
 					}
 			],
-			"planExplanation": "Explanation in markdown",
-			"planPreparation": {
-				"breakfast": "Prep instructions for breakfast",
-				"lunch": "Prep instructions for lunch",
-				"dinner": "Prep instructions for dinner"
-			}
 	}
 
 	Where "foodCategory" must be one of: breakfast, lunch, dinner, or snack.`
+}
+
+// NewMealPlanExplanationTemplate returns a string representing a template for a prompt
+// given to the LLM for generating a comprehensive explanation of a meal plan.
+// The template provides a structured format for the agent to follow when generating
+// meal plan explanations, which should cover nutritional balance, user preferences, and overall benefits.
+func NewMealPlanExplanationTemplate() string {
+	return `
+You are a personal nutritionist. Based on the following meal plan items, create a comprehensive explanation of the overall nutrition strategy.
+
+	When generating a meal plan, follow these strict rules:
+	1. Always format your final answer as a valid JSON object
+	2. Your response MUST respect the JSON format you will be provided. If you encounter an error,
+			return an empty JSON object with the provided keys so it can be parsed.
+	3. Do NOT use markdown or any other type of markup. No asterisks or other symbols are allowed for your string output.
+		DO NOT add any other string other than the JSON, otherwise you wil mess up the parsing of the response and this can
+		incur in monetary loss.
+	4. Explain the nutritional balance, how it addresses the user's preferences from context, and the overall benefits.
+
+Context:
+{{.PlanFromChain1}}
+
+	{
+		"planExplanation": "Explanation of the plan (string)",
+	}
+`
+}
+
+// NewMealPlanPreparationTemplate returns a string representing a template for a prompt
+// given to the LLM for generating meal preparation instructions from a list of foods.
+func NewMealPlanPreparationTemplate() string {
+	return `
+You are a personal nutritionist specializing in meal prep. Based on the following meal plan items, create practical preparation instructions organized by meal type.
+
+	When generating a meal plan, follow these strict rules:
+	1. Always format your final answer as a valid JSON object
+	2. Your response MUST respect the JSON format you will be provided. If you encounter an error,
+			return an empty JSON object with the provided keys so it can be parsed.
+	3. Do NOT use markdown or any other type of markup. No asterisks or other symbols are allowed for your string output.
+		DO NOT add any other string other than the JSON, otherwise you wil mess up the parsing of the response and this can
+		incur in monetary loss.
+
+Meal Plan Items:
+{{.PlanFromChain1}}
+
+Your output should include only the content for the "planPreparation" object in the final JSON with these three keys:
+- breakfast: Detailed prep instructions for breakfast items
+- lunch: Detailed prep instructions for lunch items
+- dinner: Detailed prep instructions for dinner items
+
+Focus on efficient batch cooking methods, storage recommendations, and how to maintain freshness throughout the week.
+
+{
+		"planPreparation": {
+			"breakfast": "Prep instructions for breakfast",
+			"lunch": "Prep instructions for lunch",
+			"dinner": "Prep instructions for dinner"
+		}
+}
+`
 }
 
 // NewMacroTargetsTemplate returns a string representing a template for a prompt
@@ -61,6 +115,9 @@ func NewMacroTargetsTemplate() string {
 	1. Always format your final answer as a valid JSON object
 	2. Your response MUST respect the JSON format you will be provided. If you encounter an error,
 			return an empty JSON object with the provided keys so it can be parsed.
+	3. Do NOT use markdown or any other type of markup. No asterisks or other symbols are allowed for your string output.
+		DO NOT add any other string other than the JSON, otherwise you wil mess up the parsing of the response and this can
+		incur in monetary loss.
 
 	Context:
 	{{.Input}}
@@ -84,7 +141,9 @@ func NewDietaryRestrictionsTemplate() string {
 	1. Always format your final answer as a valid JSON object
 	2. Your response MUST respect the JSON format you will be provided. If you encounter an error,
 			return an empty JSON object with the provided keys so it can be parsed.
-	3. The JSON is simply a list of strings, no object brackets
+	3. Do NOT use markdown or any other type of markup. No asterisks or other symbols are allowed for your string output.
+		DO NOT add any other string other than the JSON, otherwise you wil mess up the parsing of the response and this can
+		incur in monetary loss.
 
 	Context:
 	{{.Input}}
@@ -93,9 +152,9 @@ func NewDietaryRestrictionsTemplate() string {
 	`
 }
 
-// NewPlanShoopingListTemplate returns a string representing a template for a prompt
+// NewMealPlanShoppingListTemplate returns a string representing a template for a prompt
 // given to the LLM for generating a shopping list from a list of foods.
-func NewPlanShoopingListTemplate() string {
+func NewMealPlanShoppingListTemplate() string {
 	return `
 	Here you have some foods, read them all and create a shopping list for all of them.
 
@@ -103,8 +162,12 @@ func NewPlanShoopingListTemplate() string {
 	1. Always format your final answer as a valid JSON object
 	2. Your response MUST respect the JSON format you will be provided. If you encounter an error,
 			return an empty JSON object with the provided keys so it can be parsed.
-	3. Do not say anything else other than the JSON, otherwise you wil mess up the parsing of
-		the response and this can incur in monetary loss.
+	3. Do NOT use markdown or any other type of markup. No asterisks or other symbols are allowed for your string output.
+		DO NOT add any other string other than the JSON, otherwise you wil mess up the parsing of the response and this can
+		incur in monetary loss.
+	4. Take the user macros into consideration (if they're available in the input) when suggesting food portions
+	5. Try as much as possible to add the portions to the foods so the user can have better perspective on how
+		to buy.
 
 	Context:
 	{{.Input}}
@@ -121,15 +184,15 @@ func NewPlanShoopingListTemplate() string {
 	[
 		{
 			"foodGroup": "Protein",
-			"foods": ["Lean Meat", "Chicken Breast", "Salmon"]
+			"foods": ["Lean Meat (100g)", "Chicken Breast (200g)", "Salmon (420g)"]
 		},
 		{
 			"foodGroup": "Carbs",
-			"foods": ["Brown Rice", "Quinoa", "Oatmeal"]
+			"foods": ["Brown Rice (200g)", "Quinoa (200g)", "Oatmeal (200g)"]
 		},
 		{
 			"foodGroup": "Fruits",
-			"foods": ["Bananas", "Apples"]
+			"foods": ["Bananas (100g)", "Oranges (100g)", "Apples (100g)"]
 		}
 	]
 	`

@@ -13,18 +13,23 @@ type PlanPreparation struct {
 // MealPlanFood represents a food in the meal plan
 type MealPlanFood struct {
 	Food            string       `json:"food"`
-	Weight          string       `json:"weight"`
 	Macros          string       `json:"macros"`
 	FoodExplanation string       `json:"foodExplanation"`
 	FoodCategory    FoodCategory `json:"foodCategory"`
 }
 
-// MealPlanResponse represents the response to a meal plan request
-type MealPlanResponse struct {
-	Plan            []MealPlanFood `json:"plan"`
-	PlanExplanation string         `json:"planExplanation"`
+// MealPlan represents the response to a meal plan request
+type MealPlan struct {
+	Plan []MealPlanFood `json:"plan"`
+}
 
-	// TODO: Separate this into another LLM call for better precision
+// MealPlanExplanation represents the explanation of a meal plan
+type MealPlanExplanation struct {
+	PlanExplanation string `json:"planExplanation"`
+}
+
+// MealPlanPreparation represents the preparation instructions for a meal plan
+type MealPlanPreparation struct {
 	PlanPreparation PlanPreparation `json:"planPreparation"`
 }
 
@@ -36,7 +41,9 @@ type MealPlanShoppingList struct {
 
 // CompleteMealPlan represents the full meal plan, includes a combination of different types
 type CompleteMealPlan struct {
-	MealPlanResponse
+	MealPlan
+	MealPlanExplanation
+	MealPlanPreparation
 	ShoppingList []MealPlanShoppingList `json:"shoppingList"`
 }
 
