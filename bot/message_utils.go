@@ -16,6 +16,12 @@ func InitialMenuMessageParams(chatID int64) *bot.SendMessageParams {
 			InlineKeyboard: [][]tgmodels.InlineKeyboardButton{
 				{
 					{
+						Text:         "Add favorite foods",
+						CallbackData: string(CallbackDataAddUserFood),
+					},
+				},
+				{
+					{
 						Text:         "Set Macros",
 						CallbackData: string(CallbackDataAddMacroTargets),
 					},
@@ -26,17 +32,13 @@ func InitialMenuMessageParams(chatID int64) *bot.SendMessageParams {
 				},
 				{
 					{
-						Text:         "Add favorite foods",
-						CallbackData: string(CallbackDataAddUserFood),
-					},
-					{
 						Text:         "Set body weight",
 						CallbackData: string(CallbackDataSetBodyWeight),
 					},
-					// {
-					// 	Text:         "Set meal times",
-					// 	CallbackData: string(CallbackDataAddPlanSchedule),
-					// },
+					{
+						Text:         "Set duration of plans",
+						CallbackData: string(CallbackDataAddPlanSchedule),
+					},
 				},
 				{
 					{

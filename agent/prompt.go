@@ -26,7 +26,6 @@ func NewNutritionPromptTemplate() string {
 	5. Be creative with your suggestions as long as they can be meal prepped.
 		 For the weekdays, this is crucial since the idea is to prepare in advance.
 	6. Take dietary restrictions into consideration. Only offer foods that respect them.
-
 	Context:
 	{{.CombinedInput}}
 
