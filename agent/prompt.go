@@ -144,6 +144,7 @@ func NewDietaryRestrictionsTemplate() string {
 	3. Do NOT use markdown or any other type of markup. No asterisks or other symbols are allowed for your string output.
 		DO NOT add any other string other than the JSON, otherwise you wil mess up the parsing of the response and this can
 		incur in monetary loss.
+	4. The JSON is simply an array of strings. Do not add objects or other keys.
 
 	Context:
 	{{.Input}}
