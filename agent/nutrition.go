@@ -65,6 +65,11 @@ func (n *NutritionAgent) GenerateMealPlan(ctx context.Context, user *database.Us
 		return models.CompleteMealPlan{}, err
 	}
 
+	log.
+		Debug().
+		Str("explanationResponse", explanationResponse.PlanExplanation).
+		Msg("Debug explanationResponse")
+
 	return models.CompleteMealPlan{
 		MealPlan:            mealResponse,
 		MealPlanExplanation: explanationResponse,

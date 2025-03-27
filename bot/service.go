@@ -78,6 +78,7 @@ func (s *BotService) RegisterHandlers() {
 		DB:                   s.db,
 		StateManager:         s.stateManager,
 		NaturalLanguageAgent: s.naturalLanguageAgent,
+		HandlerRegistry:      s.handlers,
 	}
 
 	// Register command handlers
@@ -105,9 +106,16 @@ func (s *BotService) RegisterHandlers() {
 		CallbackDataAddMacroTargets:        NewMacroTargetsHandler(handlerDeps),
 		CallbackDataSetDietaryRestrictions: NewSetDietaryRestrictionsHandler(handlerDeps),
 		CallbackDataSetBodyWeight:          NewSetBodyWeightHandler(handlerDeps),
+
+		CallBackDataAcceptPlan: NewPlanAcceptanceHandler(handlerDeps, true),
+		CallbackDataRejectPlan: NewPlanAcceptanceHandler(handlerDeps, false),
 	}
 
 	for callbackData, handler := range callbackHandlers {
+		// Register handlers to the registry
+		s.handlers.Register(string(callbackData), handler)
+
+		// Register callback handlers
 		s.bot.RegisterHandler(tgbot.HandlerTypeCallbackQueryData,
 			string(callbackData),
 			tgbot.MatchTypeExact,

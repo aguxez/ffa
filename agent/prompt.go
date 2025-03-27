@@ -60,13 +60,14 @@ You are a personal nutritionist. Based on the following meal plan items, create 
 	3. Do NOT use markdown or any other type of markup. No asterisks or other symbols are allowed for your string output.
 		DO NOT add any other string other than the JSON, otherwise you wil mess up the parsing of the response and this can
 		incur in monetary loss.
-	4. Explain the nutritional balance, how it addresses the user's preferences from context, and the overall benefits.
+	4. Once again. DO NOT ADD Markdown to the text. No asterisks or other symbols are allowed for your string output.
+	5. Explain the nutritional balance, how it addresses the user's preferences from context, and the overall benefits.
 
 Context:
 {{.PlanFromChain1}}
 
 	{
-		"planExplanation": "Explanation of the plan (string)",
+		"planExplanation": "(string, NO MARKDOWN)",
 	}
 `
 }
