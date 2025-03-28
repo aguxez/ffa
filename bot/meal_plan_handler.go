@@ -69,7 +69,7 @@ func (h *MealPlanHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tg
 	log.Debug().Msg("Generated document from meal plan")
 
 	// Send document
-	bot.SendDocument(ctx, &tgbot.SendDocumentParams{
+	msg, err := bot.SendDocument(ctx, &tgbot.SendDocumentParams{
 		ChatID:  chatID,
 		Caption: "Here is our recommended meal plan based on the schedule and information you have shared with us!",
 		Document: &tgmodels.InputFileUpload{
@@ -91,6 +91,28 @@ func (h *MealPlanHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tg
 			},
 		},
 	})
+	if err != nil {
+		log.Err(err).Msg("Error sending document")
+		ErrorResponse(ctx, bot, chatID, "There was an error sending your document. This has been informed.")
+		return
+	}
+
+	// Save the meal plan to reference later
+	var userMealPlanInput []database.UserMealPlanFoodInput
+	for _, planFood := range plan.Plan {
+		userMealPlanInput = append(userMealPlanInput, database.UserMealPlanFoodInput{
+			Name:     planFood.Food,
+			Category: string(planFood.FoodCategory),
+		})
+	}
+
+	if err := database.SaveUserMealPlan(h.deps.DB, userID, msg.ID, userMealPlanInput); err != nil {
+		log.Err(err).
+			Int("messageID", msg.ID).
+			Uint("userID", userID).
+			Msg("Error saving user meal plan")
+		return
+	}
 }
 
 // removeMarkupAndEditMessage modifies or removes the message that triggered
@@ -100,7 +122,11 @@ func (h *MealPlanHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tg
 func (h *MealPlanHandler) removeMarkupAndEditMessage(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) error {
 	chatID := update.CallbackQuery.Message.Message.Chat.ID
 	messageID := update.CallbackQuery.Message.Message.ID
-	fileID := update.CallbackQuery.Message.Message.Document.FileID
+
+	var fileID string
+	if update.CallbackQuery.Message.Message.Document != nil {
+		fileID = update.CallbackQuery.Message.Message.Document.FileID
+	}
 
 	// Message has no media attached to it. The message that triggered it only has text
 	if fileID == "" {

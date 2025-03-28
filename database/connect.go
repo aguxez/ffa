@@ -25,6 +25,8 @@ func Connect() (*gorm.DB, error) {
 		&UserFood{},
 		&UserPlanSchedule{},
 		&UserDietaryRestriction{},
+		&UserMealPlan{},
+		&UserMealPlanFood{},
 	)
 
 	return db, nil

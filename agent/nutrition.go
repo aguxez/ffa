@@ -100,7 +100,7 @@ func (n *NutritionAgent) generateMealPlanFromLLM(ctx context.Context, user *data
 	var dietaryRestrictionsStr string
 	if user.DietaryRestrictions != nil {
 		dietaryRestrictionsStr += "Dietary Restrictions:\n"
-		for _, restriction := range *user.DietaryRestrictions {
+		for _, restriction := range user.DietaryRestrictions {
 			dietaryRestrictionsStr += fmt.Sprintf("- %s\n", restriction.Name)
 		}
 	}
