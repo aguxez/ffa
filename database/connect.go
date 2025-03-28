@@ -1,8 +1,7 @@
 package database
 
 import (
-	"os"
-
+	"github.com/aguxez/ffa/config"
 	"github.com/rs/zerolog/log"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -16,9 +15,8 @@ type Database struct {
 // variable. If the connection is successful, it returns a pointer to the GORM
 // database connection. If there is an error, it logs an error message and
 // returns a nil *gorm.DB and the error.
-func Connect() (*Database, error) {
-	dbUrl := os.Getenv("DATABASE_URL")
-	db, err := gorm.Open(postgres.Open(dbUrl), &gorm.Config{})
+func Connect(cfg *config.AppConfig) (*Database, error) {
+	db, err := gorm.Open(postgres.Open(cfg.Database.URL), &gorm.Config{})
 	if err != nil {
 		return &Database{}, err
 	}

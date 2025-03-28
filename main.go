@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/aguxez/ffa/bot"
+	"github.com/aguxez/ffa/config"
 	"github.com/aguxez/ffa/database"
 	"github.com/aguxez/ffa/models"
-	_ "github.com/joho/godotenv/autoload"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -14,7 +14,14 @@ import (
 func main() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
-	db, err := database.Connect()
+	// Initialize app config
+	cfg := config.NewAppConfig()
+	if cfg == nil {
+		log.Error().Msg("Error initializing app config")
+		return
+	}
+
+	db, err := database.Connect(cfg)
 	if err != nil {
 		log.Error().Msg(fmt.Sprintf("Error connecting to database: %v", err.Error()))
 	}
