@@ -65,6 +65,11 @@ func (n *NutritionAgent) GenerateMealPlan(ctx context.Context, user *database.Us
 		return models.CompleteMealPlan{}, err
 	}
 
+	log.
+		Debug().
+		Str("explanationResponse", explanationResponse.PlanExplanation).
+		Msg("Debug explanationResponse")
+
 	return models.CompleteMealPlan{
 		MealPlan:            mealResponse,
 		MealPlanExplanation: explanationResponse,
@@ -95,7 +100,7 @@ func (n *NutritionAgent) generateMealPlanFromLLM(ctx context.Context, user *data
 	var dietaryRestrictionsStr string
 	if user.DietaryRestrictions != nil {
 		dietaryRestrictionsStr += "Dietary Restrictions:\n"
-		for _, restriction := range *user.DietaryRestrictions {
+		for _, restriction := range user.DietaryRestrictions {
 			dietaryRestrictionsStr += fmt.Sprintf("- %s\n", restriction.Name)
 		}
 	}

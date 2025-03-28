@@ -69,7 +69,7 @@ func (h *MealPlanHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tg
 	log.Debug().Msg("Generated document from meal plan")
 
 	// Send document
-	bot.SendDocument(ctx, &tgbot.SendDocumentParams{
+	msg, err := bot.SendDocument(ctx, &tgbot.SendDocumentParams{
 		ChatID:  chatID,
 		Caption: "Here is our recommended meal plan based on the schedule and information you have shared with us!",
 		Document: &tgmodels.InputFileUpload{
@@ -80,22 +80,70 @@ func (h *MealPlanHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tg
 			InlineKeyboard: [][]tgmodels.InlineKeyboardButton{
 				{
 					{
-						Text:         "↼ Back to options",
-						CallbackData: string(CallbackDataBackToOptionsNoDelete),
+						Text:         "Accept ✅",
+						CallbackData: string(CallBackDataAcceptPlan),
+					},
+					{
+						Text:         "Reject ❌",
+						CallbackData: string(CallbackDataRejectPlan),
 					},
 				},
 			},
 		},
 	})
+	if err != nil {
+		log.Err(err).Msg("Error sending document")
+		ErrorResponse(ctx, bot, chatID, "There was an error sending your document. This has been informed.")
+		return
+	}
+
+	// Save the meal plan to reference later
+	var userMealPlanInput []database.UserMealPlanFoodInput
+	for _, planFood := range plan.Plan {
+		userMealPlanInput = append(userMealPlanInput, database.UserMealPlanFoodInput{
+			Name:     planFood.Food,
+			Category: string(planFood.FoodCategory),
+		})
+	}
+
+	if err := database.SaveUserMealPlan(h.deps.DB, userID, msg.ID, userMealPlanInput); err != nil {
+		log.Err(err).
+			Int("messageID", msg.ID).
+			Uint("userID", userID).
+			Msg("Error saving user meal plan")
+		return
+	}
 }
 
-// removeMarkup removes the inline keyboard markup
+// removeMarkupAndEditMessage modifies or removes the message that triggered
+// the callback query. If the message has no media attached, it updates the
+// message text to inform the user about the ongoing plan generation process.
+// If the message contains media, it deletes the message instead.
 func (h *MealPlanHandler) removeMarkupAndEditMessage(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) error {
-	// Edit the previous message's text to inform about plan generation
-	_, err := bot.EditMessageText(ctx, &tgbot.EditMessageTextParams{
-		ChatID:    update.CallbackQuery.Message.Message.Chat.ID,
-		MessageID: update.CallbackQuery.Message.Message.ID,
-		Text:      "I'm generating a plan for you now. This can take a moment.",
+	chatID := update.CallbackQuery.Message.Message.Chat.ID
+	messageID := update.CallbackQuery.Message.Message.ID
+
+	var fileID string
+	if update.CallbackQuery.Message.Message.Document != nil {
+		fileID = update.CallbackQuery.Message.Message.Document.FileID
+	}
+
+	// Message has no media attached to it. The message that triggered it only has text
+	if fileID == "" {
+		// Edit the previous message's text to inform about plan generation
+		_, err := bot.EditMessageText(ctx, &tgbot.EditMessageTextParams{
+			ChatID:    chatID,
+			MessageID: messageID,
+			Text:      "I'm generating a plan for you now. This can take a moment.",
+		})
+
+		return err
+	}
+
+	// Remove the message as it has media attached to it
+	_, err := bot.DeleteMessage(ctx, &tgbot.DeleteMessageParams{
+		ChatID:    chatID,
+		MessageID: messageID,
 	})
 
 	return err

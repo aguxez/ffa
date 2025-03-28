@@ -24,6 +24,10 @@ const (
 	CallbackDataBackToOptions          CallbackData = "callback_back_to_options"
 	CallbackDataBackToOptionsNoDelete  CallbackData = "callback_back_to_options_no_delete"
 	CallbackDataSetBodyWeight          CallbackData = "callback_set_body_weight"
+
+	// Callback for feedback on plan whenever we send it
+	CallBackDataAcceptPlan CallbackData = "callback_accept_plan"
+	CallbackDataRejectPlan CallbackData = "callback_reject_plan"
 )
 
 // Handler is the interface for all handlers
@@ -37,6 +41,7 @@ type HandlerDependencies struct {
 	NaturalLanguageAgent *agent.NaturalLanguageAgent
 	DB                   *gorm.DB
 	StateManager         *models.StateManager
+	HandlerRegistry      *HandlerRegistry
 }
 
 // HandlerRegistry manages the registration of handlers
@@ -52,14 +57,12 @@ func NewHandlerRegistry() *HandlerRegistry {
 }
 
 // Register registers a handler
-func (r *HandlerRegistry) Register(handlerType, pattern string, matchType tgbot.MatchType, handler Handler) {
-	key := handlerType + ":" + pattern
+func (r *HandlerRegistry) Register(key string, handler Handler) {
 	r.handlers[key] = handler
 }
 
 // Get returns a handler
-func (r *HandlerRegistry) Get(handlerType, pattern string) Handler {
-	key := handlerType + ":" + pattern
+func (r *HandlerRegistry) Get(key string) Handler {
 	return r.handlers[key]
 }
 
