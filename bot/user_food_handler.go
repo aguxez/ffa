@@ -4,7 +4,6 @@ import (
 	"context"
 	"strings"
 
-	"github.com/aguxez/ffa/database"
 	"github.com/aguxez/ffa/models"
 	tgbot "github.com/go-telegram/bot"
 	tgmodels "github.com/go-telegram/bot/models"
@@ -59,7 +58,7 @@ func (h *UserFoodMessageHandler) Handle(ctx context.Context, bot *tgbot.Bot, upd
 	foodsFromMessage := strings.Split(update.Message.Text, "\n")
 
 	// Save to database
-	err := database.SaveUserFoods(h.deps.DB, userID, foodsFromMessage)
+	err := h.deps.DB.SaveUserFoods(userID, foodsFromMessage)
 	if err != nil {
 		log.Err(err).Uint("userID", userID).Msg("Error saving user foods")
 		ErrorResponse(ctx, bot, chatID, "There was an error saving your food preferences. Please try again.")

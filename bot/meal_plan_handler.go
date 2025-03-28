@@ -29,7 +29,7 @@ func (h *MealPlanHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tg
 	userID := uint(update.CallbackQuery.From.ID)
 
 	// Load user and associations
-	user, err := database.GetUser(h.deps.DB, userID)
+	user, err := h.deps.DB.GetUser(userID)
 	if err != nil {
 		log.Err(err).Msg("Error getting user foods")
 		ErrorResponse(ctx, bot, chatID, "Failed to retrieve your food preferences.")
@@ -106,7 +106,7 @@ func (h *MealPlanHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tg
 		})
 	}
 
-	if err := database.SaveUserMealPlan(h.deps.DB, userID, msg.ID, userMealPlanInput); err != nil {
+	if err := h.deps.DB.SaveUserMealPlan(userID, msg.ID, userMealPlanInput); err != nil {
 		log.Err(err).
 			Int("messageID", msg.ID).
 			Uint("userID", userID).

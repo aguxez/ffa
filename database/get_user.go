@@ -1,7 +1,5 @@
 package database
 
-import "gorm.io/gorm"
-
 // GetUser retrieves a user from the database by userID.
 //
 // The function takes a pointer to a gorm.DB and a userID as parameters.
@@ -9,9 +7,9 @@ import "gorm.io/gorm"
 // some relevant associations. It returns a pointer to the
 // User and an error if there was an issue during the query.
 
-func GetUser(db *gorm.DB, userID uint) (*User, error) {
+func (db *Database) GetUser(userID uint) (*User, error) {
 	var user User
-	err := db.
+	err := db.Conn.
 		Where("id = ?", userID).
 		Preload("Foods").
 		Preload("DietaryRestrictions").

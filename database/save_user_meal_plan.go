@@ -1,7 +1,5 @@
 package database
 
-import "gorm.io/gorm"
-
 type UserMealPlanFoodInput struct {
 	Name     string
 	Category string
@@ -10,7 +8,7 @@ type UserMealPlanFoodInput struct {
 // SaveUserMealPlan inserts a UserMealPlan into the database.
 // It takes a UserMealPlan and a GORM database object as parameters.
 // It returns an error if there was an issue with the database call.
-func SaveUserMealPlan(db *gorm.DB, userID uint, messageID int, foods []UserMealPlanFoodInput) error {
+func (db *Database) SaveUserMealPlan(userID uint, messageID int, foods []UserMealPlanFoodInput) error {
 	mealPlan := UserMealPlan{
 		UserID:    userID,
 		MessageID: messageID,
@@ -23,5 +21,5 @@ func SaveUserMealPlan(db *gorm.DB, userID uint, messageID int, foods []UserMealP
 		})
 	}
 
-	return db.Create(&mealPlan).Error
+	return db.Conn.Create(&mealPlan).Error
 }

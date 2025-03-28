@@ -3,7 +3,6 @@ package bot
 import (
 	"context"
 
-	"github.com/aguxez/ffa/database"
 	"github.com/aguxez/ffa/models"
 	tgbot "github.com/go-telegram/bot"
 	tgmodels "github.com/go-telegram/bot/models"
@@ -89,7 +88,7 @@ func (h *PlanScheduleUpdateHandler) Handle(ctx context.Context, bot *tgbot.Bot, 
 	h.deps.StateManager.SetUserState(userID, models.ConversationStageNull)
 
 	// Update settings in database
-	err := database.UpdateUserPlanSchedule(h.deps.DB, userID, h.intervalDays)
+	err := h.deps.DB.UpdateUserPlanSchedule(userID, h.intervalDays)
 	if err != nil {
 		log.Err(err).Msg("Error updating user plan schedule")
 		return

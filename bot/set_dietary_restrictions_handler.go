@@ -3,7 +3,6 @@ package bot
 import (
 	"context"
 
-	"github.com/aguxez/ffa/database"
 	"github.com/aguxez/ffa/models"
 	tgbot "github.com/go-telegram/bot"
 	tgmodels "github.com/go-telegram/bot/models"
@@ -73,7 +72,7 @@ func (h *SetDietaryRestrictionsMessageHandler) Handle(ctx context.Context, bot *
 	}
 
 	// Update user's dietary restrictions
-	err = database.SaveUserDietaryRestrictions(h.deps.DB, userID, userDietaryRestrictions)
+	err = h.deps.DB.SaveUserDietaryRestrictions(userID, userDietaryRestrictions)
 	if err != nil {
 		log.Err(err).Msg("Error updating user's dietary restrictions")
 		return

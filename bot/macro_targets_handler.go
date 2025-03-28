@@ -3,7 +3,6 @@ package bot
 import (
 	"context"
 
-	"github.com/aguxez/ffa/database"
 	"github.com/aguxez/ffa/models"
 	tgbot "github.com/go-telegram/bot"
 	tgmodels "github.com/go-telegram/bot/models"
@@ -73,7 +72,7 @@ func (h *MacroTargetsMessageHandler) Handle(ctx context.Context, bot *tgbot.Bot,
 	}
 
 	// Update user's macro targets
-	err = database.UpdateUserMacros(h.deps.DB, uint(update.Message.From.ID), macroTargets)
+	err = h.deps.DB.UpdateUserMacros(uint(update.Message.From.ID), macroTargets)
 	if err != nil {
 		log.Err(err).Msg("Error updating user's macro targets")
 		return

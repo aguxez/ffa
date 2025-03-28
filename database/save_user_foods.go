@@ -3,7 +3,6 @@ package database
 import (
 	"strings"
 
-	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -15,7 +14,7 @@ import (
 // then we can structure the data better.
 //
 // The function returns an error if there is a problem saving the foods.
-func SaveUserFoods(db *gorm.DB, userID uint, foodNames []string) error {
+func (db *Database) SaveUserFoods(userID uint, foodNames []string) error {
 	var userFoods []UserFood
 	for _, food := range foodNames {
 		userFoods = append(userFoods, UserFood{
@@ -26,5 +25,5 @@ func SaveUserFoods(db *gorm.DB, userID uint, foodNames []string) error {
 
 	// If there is a conflicting entry when inserting foods for a specific user
 	// we can simply ignore it.
-	return db.Clauses(clause.OnConflict{DoNothing: true}).Create(&userFoods).Error
+	return db.Conn.Clauses(clause.OnConflict{DoNothing: true}).Create(&userFoods).Error
 }

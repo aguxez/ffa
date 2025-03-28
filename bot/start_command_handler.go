@@ -3,7 +3,6 @@ package bot
 import (
 	"context"
 
-	"github.com/aguxez/ffa/database"
 	"github.com/aguxez/ffa/models"
 	tgbot "github.com/go-telegram/bot"
 	tgmodels "github.com/go-telegram/bot/models"
@@ -44,7 +43,7 @@ func (h *StartCommandHandler) Handle(ctx context.Context, bot *tgbot.Bot, update
 	h.deps.StateManager.SetUserState(userID, models.ConversationStageStart)
 
 	// Ensure user exists in database
-	_, err := database.GetOrCreateUser(h.deps.DB, userID)
+	_, err := h.deps.DB.GetOrCreateUser(userID)
 	if err != nil {
 		log.Err(err).Msg("Error finding or creating user")
 		return

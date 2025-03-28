@@ -4,10 +4,10 @@ import (
 	"context"
 
 	"github.com/aguxez/ffa/agent"
+	"github.com/aguxez/ffa/database"
 	"github.com/aguxez/ffa/models"
 	tgbot "github.com/go-telegram/bot"
 	tgmodels "github.com/go-telegram/bot/models"
-	"gorm.io/gorm"
 )
 
 // CallbackData defines type-safe callback data values
@@ -39,7 +39,7 @@ type Handler interface {
 type HandlerDependencies struct {
 	NutritionAgent       *agent.NutritionAgent
 	NaturalLanguageAgent *agent.NaturalLanguageAgent
-	DB                   *gorm.DB
+	DB                   *database.Database
 	StateManager         *models.StateManager
 	HandlerRegistry      *HandlerRegistry
 }

@@ -3,7 +3,6 @@ package database
 import (
 	"strings"
 
-	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -14,7 +13,7 @@ type UserDietaryRestrictionsPayload []string
 //
 // It takes a pointer to a gorm DB, a userID, and a slice of strings representing the dietary restrictions.
 // It returns an error if there is a problem saving the foods.
-func SaveUserDietaryRestrictions(db *gorm.DB, userID uint, restrictions UserDietaryRestrictionsPayload) error {
+func (db *Database) SaveUserDietaryRestrictions(userID uint, restrictions UserDietaryRestrictionsPayload) error {
 	var payload []UserDietaryRestriction
 	for _, restriction := range restrictions {
 		payload = append(payload, UserDietaryRestriction{
@@ -25,5 +24,5 @@ func SaveUserDietaryRestrictions(db *gorm.DB, userID uint, restrictions UserDiet
 
 	// If there is a conflicting entry when inserting foods for a specific user
 	// we can simply ignore it.
-	return db.Clauses(clause.OnConflict{DoNothing: true}).Create(&payload).Error
+	return db.Conn.Clauses(clause.OnConflict{DoNothing: true}).Create(&payload).Error
 }

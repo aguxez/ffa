@@ -3,7 +3,6 @@ package bot
 import (
 	"context"
 
-	"github.com/aguxez/ffa/database"
 	"github.com/aguxez/ffa/models"
 	tgbot "github.com/go-telegram/bot"
 	tgmodels "github.com/go-telegram/bot/models"
@@ -41,7 +40,7 @@ func (h *PlanAcceptanceHandler) Handle(ctx context.Context, bot *tgbot.Bot, upda
 	// If the user approved the plan, we want to save it in the database for further
 	// feedback down the line
 	if h.isPlanAccepted {
-		if err := database.AcceptUserMealPlan(h.deps.DB, userID, messageID); err != nil {
+		if err := h.deps.DB.AcceptUserMealPlan(userID, messageID); err != nil {
 			log.Err(err).Msg("Error accepting plan")
 			return
 		}

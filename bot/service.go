@@ -6,11 +6,11 @@ import (
 	"os/signal"
 
 	"github.com/aguxez/ffa/agent"
+	"github.com/aguxez/ffa/database"
 	"github.com/aguxez/ffa/models"
 	tgbot "github.com/go-telegram/bot"
 	"github.com/rs/zerolog/log"
 	"github.com/tmc/langchaingo/llms/openai"
-	"gorm.io/gorm"
 )
 
 // BotService encapsulates the Telegram bot functionality
@@ -18,13 +18,13 @@ type BotService struct {
 	bot                  *tgbot.Bot
 	nutritionAgent       *agent.NutritionAgent
 	naturalLanguageAgent *agent.NaturalLanguageAgent
-	db                   *gorm.DB
+	db                   *database.Database
 	stateManager         *models.StateManager
 	handlers             *HandlerRegistry
 }
 
 // NewBotService creates a new BotService
-func NewBotService(stateManager *models.StateManager, db *gorm.DB) (*BotService, error) {
+func NewBotService(stateManager *models.StateManager, db *database.Database) (*BotService, error) {
 	// Create telegram bot
 	bot, err := tgbot.New(os.Getenv("TELEGRAM_BOT_API_KEY"))
 	if err != nil {
@@ -144,7 +144,7 @@ func (s *BotService) Start() error {
 }
 
 // Init initializes and starts the Telegram bot
-func Init(stateManager *models.StateManager, db *gorm.DB) error {
+func Init(stateManager *models.StateManager, db *database.Database) error {
 	service, err := NewBotService(stateManager, db)
 	if err != nil {
 		return err

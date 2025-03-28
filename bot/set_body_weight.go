@@ -4,7 +4,6 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/aguxez/ffa/database"
 	"github.com/aguxez/ffa/models"
 	tgbot "github.com/go-telegram/bot"
 	tgmodels "github.com/go-telegram/bot/models"
@@ -84,7 +83,7 @@ func (h *SetBodyWeightMessageHandler) Handle(ctx context.Context, bot *tgbot.Bot
 	h.deps.StateManager.SetUserState(userID, models.ConversationStageNull)
 
 	// Update user's body weight
-	err = database.UpdateUserWeight(h.deps.DB, userID, parsedWeight)
+	err = h.deps.DB.UpdateUserWeight(userID, parsedWeight)
 	if err != nil {
 		log.Err(err).Msg("Error updating user's dietary restrictions")
 		return

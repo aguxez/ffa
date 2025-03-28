@@ -14,8 +14,8 @@ type UserMacrosPayload struct {
 //
 // It updates the existing user with the given ID by setting the macro nutrient targets
 // to the given values. It returns an error if there is a problem updating the user.
-func UpdateUserMacros(db *gorm.DB, userID uint, macros UserMacrosPayload) error {
-	return db.Save(&User{
+func (db *Database) UpdateUserMacros(userID uint, macros UserMacrosPayload) error {
+	return db.Conn.Save(&User{
 		Model:    gorm.Model{ID: userID},
 		Protein:  &macros.Protein,
 		Fat:      &macros.Fat,
