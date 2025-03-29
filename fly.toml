@@ -16,4 +16,4 @@ cpu_kind = 'shared'
 cpus = 1
 
 [env]
-DEVELOPMENT = 'dev'
+ENVIRONMENT = 'dev'

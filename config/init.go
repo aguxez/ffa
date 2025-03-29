@@ -1,19 +1,15 @@
 package config
 
 import (
-	"os"
-	"strings"
-
-	_ "github.com/joho/godotenv/autoload"
+	"github.com/joho/godotenv"
+	_ "github.com/joho/godotenv"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )
 
 type AppConfig struct {
 	Environment string `mapstructure:"environment"`
-	Database    struct {
-		URL string `mapstructure:"url"`
-	} `mapstructure:"database"`
+	DatabaseURL string `mapstructure:"database_url"`
 }
 
 // NewAppConfig creates a new AppConfig instance from the "config.yaml" file.
@@ -22,20 +18,23 @@ type AppConfig struct {
 // If there is an error unmarshalling the config, it will log an error and return nil.
 // Otherwise it will return the AppConfig instance.
 func NewAppConfig() *AppConfig {
+	err := godotenv.Load()
+	if err != nil {
+		log.Err(err).Msg("Error loading .env file")
+		return nil
+	}
+
 	// Setup Viper
-	v := viper.New() // Create a new Viper instance
+	v := viper.New()
 	v.SetConfigName("config")
 	v.SetConfigType("yaml")
 	v.AddConfigPath(".")
 	v.SetDefault("environment", "development")
 
-	// Configure Viper to replace dots with underscores for env vars
-	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	v.SetEnvPrefix("")
-	v.AutomaticEnv()
+	// v.AutomaticEnv()
 
 	// Read config file
-	err := v.ReadInConfig()
+	err = v.ReadInConfig()
 	if err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			log.Info().Msg("Config file not found. Using defaults and environment variables")
@@ -45,10 +44,8 @@ func NewAppConfig() *AppConfig {
 		}
 	}
 
-	// Override with environment variables if they exist
-	if dbURL := os.Getenv("DATABASE_URL"); dbURL != "" {
-		v.Set("database.url", dbURL)
-	}
+	v.BindEnv("environment")
+	v.BindEnv("database_url")
 
 	// Unmarshal to struct
 	var config AppConfig

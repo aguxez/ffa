@@ -16,7 +16,7 @@ type Database struct {
 // database connection. If there is an error, it logs an error message and
 // returns a nil *gorm.DB and the error.
 func Connect(cfg *config.AppConfig) (*Database, error) {
-	db, err := gorm.Open(postgres.Open(cfg.Database.URL), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(cfg.DatabaseURL), &gorm.Config{})
 	if err != nil {
 		return &Database{}, err
 	}

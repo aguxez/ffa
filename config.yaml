@@ -1,4 +1,2 @@
-database:
-  url: secret
-
+database_url: secret
 environment: development
