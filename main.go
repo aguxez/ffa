@@ -17,9 +17,9 @@ func main() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
 	// Initialize app config
-	cfg := config.NewAppConfig()
-	if cfg == nil {
-		log.Error().Msg("Error initializing app config")
+	cfg, err := config.NewAppConfig()
+	if err != nil {
+		log.Err(err).Msg("Error initializing app config")
 		return
 	}
 
@@ -31,23 +31,28 @@ func main() {
 	// Initialize state manager
 	sm := models.NewStateManager()
 
+	botService, err := bot.NewBotService(sm, db, cfg)
+	if err != nil {
+		log.Err(err).Msg("Error creating bot service")
+	}
+
 	// Initialize a scheduler service
-	scheduler := scheduler.NewSchedulerService(db)
+	scheduler := scheduler.NewSchedulerService(db, botService)
 
 	// Setup the cron
 	c := cron.New()
 	c.AddFunc(getCronTime(cfg), func() { scheduler.Run() })
 	c.Start()
 
-	// Start the bot
-	if err := bot.Init(sm, db); err != nil {
+	// Start the bot and block main thread
+	if err := botService.Init(); err != nil {
 		log.Err(err).Msg("Error initializing bot")
 	}
 }
 
 // getCronTime returns the cron time to be used for the scheduler service
 // based on the environment
-func getCronTime(cfg *config.AppConfig) string {
+func getCronTime(cfg config.AppConfig) string {
 	if cfg.Environment == "production" {
 		return "@hourly"
 	}

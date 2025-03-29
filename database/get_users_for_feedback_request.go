@@ -21,6 +21,7 @@ func (db *Database) GetUsersForFeedbackRequest() ([]User, error) {
 			// Only plans where the request time has already passed
 			time.Now()).
 		Distinct("users.id").
+		Select("users.id, users.chat_id").
 		Find(&users).Error
 	return users, err
 }

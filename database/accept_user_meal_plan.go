@@ -36,7 +36,7 @@ func (db *Database) AcceptUserMealPlan(userID uint, messageID int) error {
 // getTimeToAskForFeedback returns the time when we should ask a user
 // for feedback on their meal plan. It takes a AppConfig object as a
 // parameter and returns a time.Time object.
-func getTimeToAskForFeedback(cfg *config.AppConfig) time.Time {
+func getTimeToAskForFeedback(cfg config.AppConfig) time.Time {
 	if cfg.Environment == "production" {
 		// Two days from now
 		return time.Now().Add(time.Hour * 24 * 2)

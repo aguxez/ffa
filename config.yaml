@@ -1,2 +1,5 @@
 database_url: secret
+telegram_bot_api_key: secret
+openrouter_api_key: secret
+
 environment: development

@@ -8,8 +8,10 @@ import (
 )
 
 type AppConfig struct {
-	Environment string `mapstructure:"environment"`
-	DatabaseURL string `mapstructure:"database_url"`
+	Environment       string `mapstructure:"environment"`
+	DatabaseURL       string `mapstructure:"database_url"`
+	TelegramBotAPIKey string `mapstructure:"telegram_bot_api_key"`
+	OpenRouterAPIKey  string `mapstructure:"openrouter_api_key"`
 }
 
 // NewAppConfig creates a new AppConfig instance from the "config.yaml" file.
@@ -17,11 +19,11 @@ type AppConfig struct {
 // If the file exists but there is an error reading it, it will log an error and return nil.
 // If there is an error unmarshalling the config, it will log an error and return nil.
 // Otherwise it will return the AppConfig instance.
-func NewAppConfig() *AppConfig {
+func NewAppConfig() (AppConfig, error) {
 	err := godotenv.Load()
 	if err != nil {
 		log.Err(err).Msg("Error loading .env file")
-		return nil
+		return AppConfig{}, err
 	}
 
 	// Setup Viper
@@ -39,21 +41,23 @@ func NewAppConfig() *AppConfig {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			log.Info().Msg("Config file not found. Using defaults and environment variables")
 		} else {
-			log.Error().Err(err).Msg("Error reading config file")
-			return nil
+			log.Err(err).Msg("Error reading config file")
+			return AppConfig{}, err
 		}
 	}
 
 	v.BindEnv("environment")
 	v.BindEnv("database_url")
+	v.BindEnv("telegram_bot_api_key")
+	v.BindEnv("openrouter_api_key")
 
 	// Unmarshal to struct
 	var config AppConfig
 	err = v.Unmarshal(&config)
 	if err != nil {
 		log.Error().Err(err).Msg("Error unmarshalling config")
-		return nil
+		return AppConfig{}, err
 	}
 
-	return &config
+	return config, nil
 }

@@ -6,6 +6,7 @@ import (
 	"os/signal"
 
 	"github.com/aguxez/ffa/agent"
+	"github.com/aguxez/ffa/config"
 	"github.com/aguxez/ffa/database"
 	"github.com/aguxez/ffa/models"
 	tgbot "github.com/go-telegram/bot"
@@ -24,9 +25,9 @@ type BotService struct {
 }
 
 // NewBotService creates a new BotService
-func NewBotService(stateManager *models.StateManager, db *database.Database) (*BotService, error) {
+func NewBotService(stateManager *models.StateManager, db *database.Database, cfg config.AppConfig) (*BotService, error) {
 	// Create telegram bot
-	bot, err := tgbot.New(os.Getenv("TELEGRAM_BOT_API_KEY"))
+	bot, err := tgbot.New(cfg.TelegramBotAPIKey)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +35,7 @@ func NewBotService(stateManager *models.StateManager, db *database.Database) (*B
 	// Create LLM for nutrition tasks
 	nutritionLlm, err := openai.New(
 		openai.WithBaseURL("https://openrouter.ai/api/v1"),
-		openai.WithToken(os.Getenv("OPENROUTER_API_KEY")),
+		openai.WithToken(cfg.OpenRouterAPIKey),
 		openai.WithModel(string(agent.LLMModelClaude)),
 	)
 	if err != nil {
@@ -48,7 +49,7 @@ func NewBotService(stateManager *models.StateManager, db *database.Database) (*B
 	// Create LLM for natural language tasks.
 	naturalLanguageLlm, err := openai.New(
 		openai.WithBaseURL("https://openrouter.ai/api/v1"),
-		openai.WithToken(os.Getenv("OPENROUTER_API_KEY")),
+		openai.WithToken(cfg.OpenRouterAPIKey),
 		openai.WithModel(string(agent.LLMModelGemini)),
 	)
 	if err != nil {
@@ -144,12 +145,20 @@ func (s *BotService) Start() error {
 }
 
 // Init initializes and starts the Telegram bot
-func Init(stateManager *models.StateManager, db *database.Database) error {
-	service, err := NewBotService(stateManager, db)
-	if err != nil {
-		return err
-	}
+func (s *BotService) Init() error {
+	s.RegisterHandlers()
+	return s.Start()
+}
 
-	service.RegisterHandlers()
-	return service.Start()
+// SendMessage sends a message to a user on telegram.
+// Part of the `messaging.Messenger` interface
+func (s *BotService) SendMessage(user database.User, message string) error {
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
+
+	_, err := s.bot.SendMessage(ctx, &tgbot.SendMessageParams{
+		ChatID: user.ChatID,
+		Text:   message,
+	})
+	return err
 }

@@ -34,7 +34,9 @@ func (h *StartCommandHandler) Handle(ctx context.Context, bot *tgbot.Bot, update
 	if update.Message != nil {
 		userID = uint(update.Message.From.ID)
 		chatID = update.Message.Chat.ID
-	} else if update.CallbackQuery != nil {
+	}
+
+	if update.CallbackQuery != nil {
 		userID = uint(update.CallbackQuery.From.ID)
 		chatID = update.CallbackQuery.Message.Message.Chat.ID
 	}
@@ -43,7 +45,7 @@ func (h *StartCommandHandler) Handle(ctx context.Context, bot *tgbot.Bot, update
 	h.deps.StateManager.SetUserState(userID, models.ConversationStageStart)
 
 	// Ensure user exists in database
-	_, err := h.deps.DB.GetOrCreateUser(userID)
+	_, err := h.deps.DB.GetOrCreateUser(userID, chatID)
 	if err != nil {
 		log.Err(err).Msg("Error finding or creating user")
 		return
