@@ -12,13 +12,14 @@ type User struct {
 	Foods        []UserFood
 	PlanSchedule *UserPlanSchedule `gorm:"default:NULL"`
 
-	Protein             *uint32 `gorm:"default:NULL;column:protein_grams"`
-	Fat                 *uint32 `gorm:"default:NULL;column:fat_grams"`
-	Carbs               *uint32 `gorm:"default:NULL;column:carbs_grams"`
-	Calories            *uint   `gorm:"default:NULL"`
-	DietaryRestrictions []UserDietaryRestriction
-	Weight              *float64 `gorm:"default:NULL"`
-	UserMealPlans       []UserMealPlan
+	Protein                         *uint32 `gorm:"default:NULL;column:protein_grams"`
+	Fat                             *uint32 `gorm:"default:NULL;column:fat_grams"`
+	Carbs                           *uint32 `gorm:"default:NULL;column:carbs_grams"`
+	Calories                        *uint   `gorm:"default:NULL"`
+	DietaryRestrictions             []UserDietaryRestriction
+	Weight                          *float64 `gorm:"default:NULL"`
+	UserMealPlans                   []UserMealPlan
+	NextMealPlanFeedbackRequestTime *time.Time `gorm:"index"`
 }
 
 type UserFood struct {
