@@ -86,33 +86,40 @@ func (h *MealPlanFeedbackHandler) Handle(ctx context.Context, bot *tgbot.Bot, up
 
 	userID := uint(update.CallbackQuery.From.ID)
 	chatID := update.CallbackQuery.Message.Message.Chat.ID
+	messageID := update.CallbackQuery.Message.Message.ID
 	userState := h.deps.StateManager.GetUserState(userID)
 
 	// Handle start of feedback process
 	if update.CallbackQuery.Data == string(CallbackDataMealPlanFeedbackStart) {
-		h.startFeedbackProcess(ctx, bot, userID, chatID)
+		h.startFeedbackProcess(ctx, bot, userID, chatID, messageID)
 		return
 	}
 
 	// If no active feedback stage, start with breakfast
 	if userState.Stage == models.ConversationStageNull {
-		h.startFeedbackProcess(ctx, bot, userID, chatID)
+		h.startFeedbackProcess(ctx, bot, userID, chatID, messageID)
 		return
 	}
 
 	// Process feedback for current meal
-	h.processMealFeedback(ctx, bot, update, userID, chatID, userState.Stage)
+	h.processMealFeedback(ctx, bot, update, userID, chatID, messageID, userState.Stage)
 }
 
 // startFeedbackProcess initiates the feedback collection process
-func (h *MealPlanFeedbackHandler) startFeedbackProcess(ctx context.Context, bot *tgbot.Bot, userID uint, chatID int64) {
+func (h *MealPlanFeedbackHandler) startFeedbackProcess(
+	ctx context.Context,
+	bot *tgbot.Bot,
+	userID uint,
+	chatID int64,
+	messageID int,
+) {
 	log.Debug().Msg("Starting feedback process with breakfast")
 
 	// Set user state to breakfast feedback stage
 	h.deps.StateManager.SetUserState(userID, models.ConversationStageMealPlanFeedbackBreakfast)
 
 	// Send breakfast feedback question
-	h.sendFeedbackQuestion(ctx, bot, chatID, h.config[models.ConversationStageMealPlanFeedbackBreakfast])
+	h.sendFeedbackQuestion(ctx, bot, chatID, messageID, h.config[models.ConversationStageMealPlanFeedbackBreakfast])
 }
 
 // processMealFeedback handles feedback for a specific meal type
@@ -122,6 +129,7 @@ func (h *MealPlanFeedbackHandler) processMealFeedback(
 	update *tgmodels.Update,
 	userID uint,
 	chatID int64,
+	messageID int,
 	currentStage models.ConversationStage,
 ) {
 	logger := log.With().
@@ -155,12 +163,12 @@ func (h *MealPlanFeedbackHandler) processMealFeedback(
 
 	// If this was the last meal, send completion message
 	if config.NextStage == models.ConversationStageNull {
-		h.sendCompletionMessage(ctx, bot, chatID)
+		h.sendCompletionMessage(ctx, bot, chatID, messageID)
 		return
 	}
 
 	// Send question for next meal
-	h.sendFeedbackQuestion(ctx, bot, chatID, h.config[config.NextStage])
+	h.sendFeedbackQuestion(ctx, bot, chatID, messageID, h.config[config.NextStage])
 }
 
 // saveFeedbackToDatabase stores user's meal feedback
@@ -185,11 +193,13 @@ func (h *MealPlanFeedbackHandler) sendFeedbackQuestion(
 	ctx context.Context,
 	bot *tgbot.Bot,
 	chatID int64,
+	messageID int,
 	config MealFeedbackConfig,
 ) {
-	_, err := bot.SendMessage(ctx, &tgbot.SendMessageParams{
-		ChatID: chatID,
-		Text:   config.Question,
+	_, err := bot.EditMessageText(ctx, &tgbot.EditMessageTextParams{
+		ChatID:    chatID,
+		MessageID: messageID,
+		Text:      config.Question,
 		ReplyMarkup: &tgmodels.InlineKeyboardMarkup{
 			InlineKeyboard: [][]tgmodels.InlineKeyboardButton{
 				{
@@ -211,10 +221,18 @@ func (h *MealPlanFeedbackHandler) sendFeedbackQuestion(
 }
 
 // sendCompletionMessage sends the final message after collecting all feedback
-func (h *MealPlanFeedbackHandler) sendCompletionMessage(ctx context.Context, bot *tgbot.Bot, chatID int64) {
-	_, err := bot.SendMessage(ctx, &tgbot.SendMessageParams{
-		ChatID: chatID,
-		Text:   "Thanks for your feedback. Your recommendations will be updated for your next meal plan.",
+func (h *MealPlanFeedbackHandler) sendCompletionMessage(ctx context.Context,
+	bot *tgbot.Bot,
+	chatID int64,
+	messageID int,
+) {
+	_, err := bot.EditMessageText(ctx, &tgbot.EditMessageTextParams{
+		ChatID:    chatID,
+		MessageID: messageID,
+		Text:      "Thanks for your feedback. Your recommendations will be updated for your next meal plan.",
+		ReplyMarkup: &tgmodels.InlineKeyboardMarkup{
+			InlineKeyboard: [][]tgmodels.InlineKeyboardButton{},
+		},
 	})
 	if err != nil {
 		log.Err(err).Int64("chatID", chatID).Msg("Error sending completion message")
