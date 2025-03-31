@@ -40,10 +40,7 @@ func (s *SchedulerService) Run() error {
 		log.Info().Uint("userID", user.ID).Msg("Sending feedback request")
 
 		// Send the feedback request
-		msg := `
-Hi there! It's time for your meal plan check-in.
-Let me ask you a few questions that will help me understand what has been working for you to get better with your suggestions!
-		`
+		msg := "Time for your meal plan check-in. Quick feedback helps me improve your recommendations!"
 		err := s.messenger.SendMessage(user, msg, messaging.WithInlineKeyboardFeedback(true))
 		if err != nil {
 			log.Err(err).Uint("userID", user.ID).Msg("Error sending feedback request")

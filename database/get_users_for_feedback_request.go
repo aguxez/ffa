@@ -12,6 +12,7 @@ func (db *Database) GetUsersForFeedbackRequest(limit int) ([]User, error) {
 		Joins("JOIN (SELECT user_id, MAX(created_at) as latest_approved_date FROM user_meal_plans WHERE is_accepted = true GROUP BY user_id) latest ON latest.user_id = users.id").
 		Joins("JOIN user_meal_plans uml ON uml.user_id = users.id AND uml.created_at = latest.latest_approved_date").
 		Where(`
+		users.chat_id IS NOT NULL AND
 		uml.is_accepted = true AND
 		uml.created_at >= ? AND
 		users.next_meal_plan_feedback_request_time IS NOT NULL AND

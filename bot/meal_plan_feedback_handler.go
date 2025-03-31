@@ -51,7 +51,7 @@ func NewMealPlanFeedbackHandler(deps *HandlerDependencies) *MealPlanFeedbackHand
 			MealType:       MealTypeBreakfast,
 			CurrentStage:   models.ConversationStageMealPlanFeedbackBreakfast,
 			NextStage:      models.ConversationStageMealPlanFeedbackLunch,
-			Question:       "How do you feel about the breakfast?",
+			Question:       "How do you feel about the breakfast? (1/3)",
 			GoodCallbackID: CallbackDataMealPlanFeedbackBreakfastGood,
 			BadCallbackID:  CallbackDataMealPlanFeedbackBreakfastBad,
 		},
@@ -59,7 +59,7 @@ func NewMealPlanFeedbackHandler(deps *HandlerDependencies) *MealPlanFeedbackHand
 			MealType:       MealTypeLunch,
 			CurrentStage:   models.ConversationStageMealPlanFeedbackLunch,
 			NextStage:      models.ConversationStageMealPlanFeedbackDinner,
-			Question:       "How do you feel about the lunch?",
+			Question:       "How do you feel about the lunch? (2/3)",
 			GoodCallbackID: CallbackDataMealPlanFeedbackLunchGood,
 			BadCallbackID:  CallbackDataMealPlanFeedbackLunchBad,
 		},
@@ -67,7 +67,7 @@ func NewMealPlanFeedbackHandler(deps *HandlerDependencies) *MealPlanFeedbackHand
 			MealType:       MealTypeDinner,
 			CurrentStage:   models.ConversationStageMealPlanFeedbackDinner,
 			NextStage:      models.ConversationStageNull, // End of flow
-			Question:       "How do you feel about the dinner?",
+			Question:       "How do you feel about the dinner? (3/3)",
 			GoodCallbackID: CallbackDataMealPlanFeedbackDinnerGood,
 			BadCallbackID:  CallbackDataMealPlanFeedbackDinnerBad,
 		},
@@ -194,11 +194,11 @@ func (h *MealPlanFeedbackHandler) sendFeedbackQuestion(
 			InlineKeyboard: [][]tgmodels.InlineKeyboardButton{
 				{
 					{
-						Text:         "❤️",
+						Text:         "Enjoyed❤️",
 						CallbackData: string(config.GoodCallbackID),
 					},
 					{
-						Text:         "☹️",
+						Text:         "Disliked☹️",
 						CallbackData: string(config.BadCallbackID),
 					},
 				},
@@ -214,7 +214,7 @@ func (h *MealPlanFeedbackHandler) sendFeedbackQuestion(
 func (h *MealPlanFeedbackHandler) sendCompletionMessage(ctx context.Context, bot *tgbot.Bot, chatID int64) {
 	_, err := bot.SendMessage(ctx, &tgbot.SendMessageParams{
 		ChatID: chatID,
-		Text:   "Thanks for your feedback. This will be used to improve the recommendations",
+		Text:   "Thanks for your feedback. Your recommendations will be updated for your next meal plan.",
 	})
 	if err != nil {
 		log.Err(err).Int64("chatID", chatID).Msg("Error sending completion message")

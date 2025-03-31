@@ -91,7 +91,7 @@ func (s *BotService) RegisterHandlers() {
 		NewStartCommandHandler(handlerDeps).Handle,
 	)
 
-	feedbackRequestHandler := NewMealPlanFeedbackStartHandler(handlerDeps)
+	feedbackRequestHandler := NewMealPlanFeedbackHandler(handlerDeps)
 
 	// Register callback handlers
 	callbackHandlers := map[CallbackData]Handler{
