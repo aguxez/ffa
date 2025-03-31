@@ -25,9 +25,21 @@ const (
 	CallbackDataBackToOptionsNoDelete  CallbackData = "callback_back_to_options_no_delete"
 	CallbackDataSetBodyWeight          CallbackData = "callback_set_body_weight"
 
-	// Callback for feedback on plan whenever we send it
+	// Callback to accept or deny a plan whenever we send it
 	CallBackDataAcceptPlan CallbackData = "callback_accept_plan"
 	CallbackDataRejectPlan CallbackData = "callback_reject_plan"
+
+	// Callback whenever we start asking for feedback on meal plans
+	CallbackDataMealPlanFeedbackStart CallbackData = "callback_meal_plan_feedback_start"
+
+	CallbackDataMealPlanFeedbackBreakfastGood CallbackData = "callback_meal_plan_feedback_breakfast_good"
+	CallbackDataMealPlanFeedbackBreakfastBad  CallbackData = "callback_meal_plan_feedback_breakfast_bad"
+
+	CallbackDataMealPlanFeedbackLunchGood CallbackData = "callback_meal_plan_feedback_lunch_good"
+	CallbackDataMealPlanFeedbackLunchBad  CallbackData = "callback_meal_plan_feedback_lunch_bad"
+
+	CallbackDataMealPlanFeedbackDinnerGood CallbackData = "callback_meal_plan_feedback_dinner_good"
+	CallbackDataMealPlanFeedbackDinnerBad  CallbackData = "callback_meal_plan_feedback_dinner_bad"
 )
 
 // Handler is the interface for all handlers

@@ -16,7 +16,8 @@ type MessageHandler struct {
 	handlers map[models.ConversationStage]Handler
 }
 
-// NewMessageHandler creates a new MessageHandler
+// NewMessageHandler creates a new MessageHandler.
+// Usually for ConversationStages
 func NewMessageHandler(deps *HandlerDependencies) *MessageHandler {
 	h := &MessageHandler{
 		deps:     deps,
@@ -45,10 +46,6 @@ func (h *MessageHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tgm
 
 	// Get user state
 	userState := h.deps.StateManager.GetUserState(userID)
-	if userState == nil {
-		log.Debug().Uint("userID", userID).Msg("No valid state for user")
-		return
-	}
 
 	// Find and execute the appropriate handler for the current conversation stage
 	if handler, exists := h.handlers[userState.Stage]; exists {

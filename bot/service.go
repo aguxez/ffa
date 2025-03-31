@@ -8,8 +8,10 @@ import (
 	"github.com/aguxez/ffa/agent"
 	"github.com/aguxez/ffa/config"
 	"github.com/aguxez/ffa/database"
+	"github.com/aguxez/ffa/messaging"
 	"github.com/aguxez/ffa/models"
 	tgbot "github.com/go-telegram/bot"
+	tgmodels "github.com/go-telegram/bot/models"
 	"github.com/rs/zerolog/log"
 	"github.com/tmc/langchaingo/llms/openai"
 )
@@ -89,6 +91,8 @@ func (s *BotService) RegisterHandlers() {
 		NewStartCommandHandler(handlerDeps).Handle,
 	)
 
+	feedbackRequestHandler := NewMealPlanFeedbackStartHandler(handlerDeps)
+
 	// Register callback handlers
 	callbackHandlers := map[CallbackData]Handler{
 		CallbackDataCreateMealPlan:        NewMealPlanHandler(handlerDeps),
@@ -110,6 +114,18 @@ func (s *BotService) RegisterHandlers() {
 
 		CallBackDataAcceptPlan: NewPlanAcceptanceHandler(handlerDeps, true),
 		CallbackDataRejectPlan: NewPlanAcceptanceHandler(handlerDeps, false),
+
+		// Feedback request handlers.
+		CallbackDataMealPlanFeedbackStart: feedbackRequestHandler,
+
+		CallbackDataMealPlanFeedbackBreakfastGood: feedbackRequestHandler,
+		CallbackDataMealPlanFeedbackBreakfastBad:  feedbackRequestHandler,
+
+		CallbackDataMealPlanFeedbackLunchGood: feedbackRequestHandler,
+		CallbackDataMealPlanFeedbackLunchBad:  feedbackRequestHandler,
+
+		CallbackDataMealPlanFeedbackDinnerGood: feedbackRequestHandler,
+		CallbackDataMealPlanFeedbackDinnerBad:  feedbackRequestHandler,
 	}
 
 	for callbackData, handler := range callbackHandlers {
@@ -152,13 +168,34 @@ func (s *BotService) Init() error {
 
 // SendMessage sends a message to a user on telegram.
 // Part of the `messaging.Messenger` interface
-func (s *BotService) SendMessage(user database.User, message string) error {
+func (s *BotService) SendMessage(user database.User, message string, options ...messaging.Option) error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
+
+	defaultOpts := messaging.Options{
+		WithInlineKeyboardFeedback: false,
+	}
+
+	for _, option := range options {
+		option(&defaultOpts)
+	}
+
+	inlineKeyboardButtons := [][]tgmodels.InlineKeyboardButton{}
+	if defaultOpts.WithInlineKeyboardFeedback {
+		inlineKeyboardButtons = append(inlineKeyboardButtons, []tgmodels.InlineKeyboardButton{
+			{
+				Text:         "Start ✅",
+				CallbackData: string(CallbackDataMealPlanFeedbackStart),
+			},
+		})
+	}
 
 	_, err := s.bot.SendMessage(ctx, &tgbot.SendMessageParams{
 		ChatID: user.ChatID,
 		Text:   message,
+		ReplyMarkup: &tgmodels.InlineKeyboardMarkup{
+			InlineKeyboard: inlineKeyboardButtons,
+		},
 	})
 	return err
 }

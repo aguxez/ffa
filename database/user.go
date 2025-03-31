@@ -56,6 +56,12 @@ type UserMealPlan struct {
 	// Represents the message ID that has the meal plan attached
 	MessageID int                `gorm:"not null"`
 	Foods     []UserMealPlanFood `gorm:"foreignKey:UserMealPlanID"`
+
+	IsBreakfastLiked bool `gorm:"not null;default:false"`
+	IsLunchLiked     bool `gorm:"not null;default:false"`
+	IsDinnerLiked    bool `gorm:"not null;default:false"`
+
+	// TODO: Add 'accepted_at' column for easier access
 }
 
 type UserMealPlanFood struct {

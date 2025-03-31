@@ -30,7 +30,7 @@ func NewSchedulerService(db *database.Database, messenger messaging.Messenger) *
 func (s *SchedulerService) Run() error {
 	log.Debug().Time("currentTime", time.Now()).Msg("Running scheduler service for feedback request")
 
-	users, err := s.db.GetUsersForFeedbackRequest()
+	users, err := s.db.GetUsersForFeedbackRequest(10)
 	if err != nil {
 		return err
 	}
@@ -40,7 +40,11 @@ func (s *SchedulerService) Run() error {
 		log.Info().Uint("userID", user.ID).Msg("Sending feedback request")
 
 		// Send the feedback request
-		err := s.messenger.SendMessage(user, "Testing feedback request")
+		msg := `
+Hi there! It's time for your meal plan check-in.
+Let me ask you a few questions that will help me understand what has been working for you to get better with your suggestions!
+		`
+		err := s.messenger.SendMessage(user, msg, messaging.WithInlineKeyboardFeedback(true))
 		if err != nil {
 			log.Err(err).Uint("userID", user.ID).Msg("Error sending feedback request")
 		}

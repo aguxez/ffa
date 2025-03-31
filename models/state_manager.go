@@ -14,6 +14,11 @@ const (
 	ConversationStageAddMacroTargets        ConversationStage = "stage_add_macro_targets"
 	ConversationStageSetDietaryRestrictions ConversationStage = "stage_set_dietary_restrictions"
 	ConversationStageSetBodyWeight          ConversationStage = "stage_set_body_weight"
+
+	// Asking for feedback on a meal plan
+	ConversationStageMealPlanFeedbackBreakfast ConversationStage = "stage_meal_plan_feedback_breakfast"
+	ConversationStageMealPlanFeedbackLunch     ConversationStage = "stage_meal_plan_feedback_lunch"
+	ConversationStageMealPlanFeedbackDinner    ConversationStage = "stage_meal_plan_feedback_dinner"
 )
 
 type UserState struct {
@@ -41,17 +46,17 @@ func NewStateManager() *StateManager {
 // The function takes a StateManager and a user ID as parameters. It locks the
 // map of user IDs to UserState structs, retrieves the UserState for the given
 // user ID and then unlocks the map.
-func (sm *StateManager) GetUserState(userID uint) *UserState {
+func (sm *StateManager) GetUserState(userID uint) UserState {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
 	userState, exists := sm.userStates[userID]
 
 	if !exists {
-		return nil
+		return UserState{Stage: ConversationStageNull}
 	}
 
-	return userState
+	return *userState
 }
 
 // SetUserState sets the conversation stage for a given user ID.
