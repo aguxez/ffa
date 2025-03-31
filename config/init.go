@@ -8,10 +8,11 @@ import (
 )
 
 type AppConfig struct {
-	Environment       string `mapstructure:"environment"`
-	DatabaseURL       string `mapstructure:"database_url"`
-	TelegramBotAPIKey string `mapstructure:"telegram_bot_api_key"`
-	OpenRouterAPIKey  string `mapstructure:"openrouter_api_key"`
+	Environment                    string `mapstructure:"environment"`
+	DatabaseURL                    string `mapstructure:"database_url"`
+	TelegramBotAPIKey              string `mapstructure:"telegram_bot_api_key"`
+	OpenRouterAPIKey               string `mapstructure:"openrouter_api_key"`
+	MealPlanFeedbackRequestMinutes int64  `mapstructure:"meal_plan_feedback_request_minutes"`
 }
 
 // NewAppConfig creates a new AppConfig instance from the "config.yaml" file.
@@ -44,6 +45,7 @@ func NewAppConfig() (AppConfig, error) {
 	v.BindEnv("database_url")
 	v.BindEnv("telegram_bot_api_key")
 	v.BindEnv("openrouter_api_key")
+	v.BindEnv("meal_plan_feedback_request_minutes")
 
 	// Unmarshal to struct
 	var config AppConfig

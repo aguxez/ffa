@@ -3,3 +3,4 @@ telegram_bot_api_key: secret
 openrouter_api_key: secret
 
 environment: development
+meal_plan_feedback_request_minutes: 1

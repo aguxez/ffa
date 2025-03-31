@@ -17,3 +17,4 @@ cpus = 1
 
 [env]
 ENVIRONMENT = 'production'
+MEAL_PLAN_FEEDBACK_REQUEST_MINUTES = '30'
