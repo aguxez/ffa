@@ -36,14 +36,22 @@ func (s *SchedulerService) Run() error {
 	}
 
 	for _, user := range users {
+		logger := log.With().Uint("userID", user.ID).Logger()
+
 		// Log the user ID
-		log.Info().Uint("userID", user.ID).Msg("Sending feedback request")
+		logger.Info().Msg("Sending feedback request")
 
 		// Send the feedback request
 		msg := "Time for your meal plan check-in. Quick feedback helps me improve your recommendations!"
 		err := s.messenger.SendMessage(user, msg, messaging.WithInlineKeyboardFeedback(true))
 		if err != nil {
-			log.Err(err).Uint("userID", user.ID).Msg("Error sending feedback request")
+			logger.Err(err).Msg("Error sending feedback request")
+		}
+
+		// Update the user's next feedback request time
+		err = s.db.RemoveUserNextFeedbackRequestTime(user.ID)
+		if err != nil {
+			logger.Err(err).Msg("Error updating next feedback request time")
 		}
 	}
 
