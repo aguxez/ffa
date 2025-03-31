@@ -91,6 +91,13 @@ func (s *BotService) RegisterHandlers() {
 		NewStartCommandHandler(handlerDeps).Handle,
 	)
 
+	// Menu is the same handler as start
+	s.bot.RegisterHandler(tgbot.HandlerTypeMessageText,
+		"/menu",
+		tgbot.MatchTypeExact,
+		NewStartCommandHandler(handlerDeps).Handle,
+	)
+
 	feedbackRequestHandler := NewMealPlanFeedbackHandler(handlerDeps)
 
 	// Register callback handlers
