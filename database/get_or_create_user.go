@@ -14,6 +14,18 @@ func (db *Database) GetOrCreateUser(userID uint, chatID int64) (*User, error) {
 		Where("id = ?", userID).
 		Attrs(User{Model: gorm.Model{ID: userID}, ChatID: &chatID}).
 		FirstOrCreate(&user).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// This is a field we must always have set. Set like this
+	// to not break existing conversations.
+	// TODO: Remove once everyone has a chatID and make chatID not null
+	if user.ChatID == nil {
+		user.ChatID = &chatID
+	}
+
+	err = db.Conn.Save(&user).Error
 
 	return &user, err
 }

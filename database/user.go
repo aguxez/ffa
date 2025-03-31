@@ -20,7 +20,7 @@ type User struct {
 	Weight                          *float64 `gorm:"default:NULL"`
 	UserMealPlans                   []UserMealPlan
 	NextMealPlanFeedbackRequestTime *time.Time `gorm:"index"`
-	ChatID                          *int64
+	ChatID                          *int64     `gorm:"index"`
 }
 
 type UserFood struct {
