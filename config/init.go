@@ -33,8 +33,6 @@ func NewAppConfig() (AppConfig, error) {
 	v.AddConfigPath(".")
 	v.SetDefault("environment", "development")
 
-	// v.AutomaticEnv()
-
 	// Read config file
 	err = v.ReadInConfig()
 	if err != nil {
