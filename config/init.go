@@ -20,11 +20,7 @@ type AppConfig struct {
 // If there is an error unmarshalling the config, it will log an error and return nil.
 // Otherwise it will return the AppConfig instance.
 func NewAppConfig() (AppConfig, error) {
-	err := godotenv.Load()
-	if err != nil {
-		log.Err(err).Msg("Error loading .env file")
-		return AppConfig{}, err
-	}
+	envErr := godotenv.Load()
 
 	// Setup Viper
 	v := viper.New()
@@ -34,7 +30,7 @@ func NewAppConfig() (AppConfig, error) {
 	v.SetDefault("environment", "development")
 
 	// Read config file
-	err = v.ReadInConfig()
+	err := v.ReadInConfig()
 	if err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			log.Info().Msg("Config file not found. Using defaults and environment variables")
@@ -55,6 +51,14 @@ func NewAppConfig() (AppConfig, error) {
 	if err != nil {
 		log.Error().Err(err).Msg("Error unmarshalling config")
 		return AppConfig{}, err
+	}
+
+	if envErr != nil && config.Environment == "development" {
+		log.
+			Err(envErr).
+			Msg("Error loading environment variables for non dev env")
+
+		return AppConfig{}, envErr
 	}
 
 	return config, nil
