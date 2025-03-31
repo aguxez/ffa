@@ -1,5 +1,7 @@
 package agent
 
+import "fmt"
+
 // NewNutritionPromptTemplate returns a string template for generating meal plans using a conversational agent.
 // The template provides a structured format for the agent to follow when interacting with users
 // as a personal nutritionist. It leverages historical meal plans and tool access to generate
@@ -132,11 +134,11 @@ func NewMacroTargetsTemplate() string {
 	`
 }
 
-// NewDietaryRestrictionsTemplate returns a string representing a template for a prompt
+// NewFoodParsingTemplate returns a string representing a template for a prompt
 // given to the LLM for parsing user-provided dietary restrictions.
-func NewDietaryRestrictionsTemplate() string {
-	return `
-	Take this text and parse the dietary restrictions as given to you.
+func NewFoodParsingTemplate(foodType string) string {
+	return fmt.Sprintf(`
+	Take this text and parse the %s as given to you.
 
 	When generating a meal plan, follow these strict rules:
 	1. Always format your final answer as a valid JSON object
@@ -151,7 +153,7 @@ func NewDietaryRestrictionsTemplate() string {
 	{{.Input}}
 
 	[string]
-	`
+	`, foodType)
 }
 
 // NewMealPlanShoppingListTemplate returns a string representing a template for a prompt

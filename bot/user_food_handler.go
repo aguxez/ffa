@@ -2,7 +2,6 @@ package bot
 
 import (
 	"context"
-	"strings"
 
 	"github.com/aguxez/ffa/models"
 	tgbot "github.com/go-telegram/bot"
@@ -49,18 +48,25 @@ func NewUserFoodMessageHandler(deps *HandlerDependencies) *UserFoodMessageHandle
 
 // Handle processes a message containing food items
 func (h *UserFoodMessageHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) {
+	logger := log.With().Str("handler", "UserFoodMessageHandler").Uint("userID", uint(update.Message.From.ID)).Logger()
+
+	logger.Debug().Msg("Processing food message")
+
 	userID := uint(update.Message.From.ID)
 	chatID := update.Message.Chat.ID
 
-	log.Debug().Uint("userID", userID).Msg("Processing food message")
-
-	// Parse food items from message
-	foodsFromMessage := strings.Split(update.Message.Text, "\n")
+	// Parse food items from natural language
+	userFoods, err := h.deps.NaturalLanguageAgent.ParseUserFoodsMessage(ctx, update.Message.Text)
+	if err != nil {
+		logger.Err(err).Msg("Error parsing user food message")
+		ErrorResponse(ctx, bot, chatID, "There was an error parsing your food preferences. Please try again.")
+		return
+	}
 
 	// Save to database
-	err := h.deps.DB.SaveUserFoods(userID, foodsFromMessage)
+	err = h.deps.DB.SaveUserFoods(userID, userFoods)
 	if err != nil {
-		log.Err(err).Uint("userID", userID).Msg("Error saving user foods")
+		logger.Err(err).Msg("Error saving user foods")
 		ErrorResponse(ctx, bot, chatID, "There was an error saving your food preferences. Please try again.")
 		return
 	}

@@ -83,6 +83,19 @@ func (a *NaturalLanguageAgent) ParseDietaryRestrictionsMessage(
 		ctx,
 		a,
 		message,
-		NewDietaryRestrictionsTemplate,
+		func() string { return NewFoodParsingTemplate("dietary restrictions") },
+	)
+}
+
+// ParseUserFoodsMessage processes a message containing foods that the user likes.
+func (a *NaturalLanguageAgent) ParseUserFoodsMessage(
+	ctx context.Context,
+	message string,
+) (database.UserFoodsPayload, error) {
+	return ParseMessage[database.UserFoodsPayload](
+		ctx,
+		a,
+		message,
+		func() string { return NewFoodParsingTemplate("foods") },
 	)
 }
