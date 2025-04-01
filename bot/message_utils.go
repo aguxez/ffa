@@ -16,18 +16,22 @@ func InitialMenuMessageParams(chatID int64) *bot.SendMessageParams {
 			InlineKeyboard: [][]tgmodels.InlineKeyboardButton{
 				{
 					{
-						Text:         "Add favorite foods",
-						CallbackData: string(CallbackDataAddUserFood),
+						Text:         "Set dietary restrictions",
+						CallbackData: string(CallbackDataSetDietaryRestrictions),
 					},
-				},
-				{
 					{
 						Text:         "Set Macros",
 						CallbackData: string(CallbackDataAddMacroTargets),
 					},
+				},
+				{
 					{
-						Text:         "Set dietary restrictions",
-						CallbackData: string(CallbackDataSetDietaryRestrictions),
+						Text:         "Add favorite foods",
+						CallbackData: string(CallbackDataAddUserFood),
+					},
+					{
+						Text:         "View added foods",
+						CallbackData: string(CallbackDataViewUserFoodOffset),
 					},
 				},
 				{

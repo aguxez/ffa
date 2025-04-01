@@ -102,39 +102,54 @@ func (s *BotService) RegisterHandlers() {
 
 	// Register callback handlers
 	callbackHandlers := map[CallbackData]Handler{
-		CallbackDataCreateMealPlan:        NewMealPlanHandler(handlerDeps),
-		CallbackDataAddUserFood:           NewUserFoodHandler(handlerDeps),
+		// Meal Plan Creation and Configuration Handlers
+		// These handlers manage the initial setup and configuration of meal plans
+		CallbackDataCreateMealPlan:         NewMealPlanHandler(handlerDeps),
+		CallbackDataAddUserFood:            NewUserFoodHandler(handlerDeps),
+		CallbackDataSetDietaryRestrictions: NewSetDietaryRestrictionsHandler(handlerDeps),
+
+		// Meal Plan Schedule Handlers
+		// These handlers manage the frequency and scheduling of meal plans
 		CallbackDataAddPlanSchedule:       NewPlanScheduleHandler(handlerDeps),
 		CallbackDataPlanScheduleWeekly:    NewPlanScheduleUpdateHandler(handlerDeps, 7),
 		CallbackDataPlanScheduleThreeDays: NewPlanScheduleUpdateHandler(handlerDeps, 3),
-		// We wat this command to always return to the 'main menu' so to speak
-		CallbackDataBackToOptions: NewBackToOptionsHandler(handlerDeps, true),
 
+		// User Profile and Nutrition Target Handlers
+		// These handlers manage user-specific data and nutritional goals
+		CallbackDataAddMacroTargets: NewMacroTargetsHandler(handlerDeps),
+		CallbackDataSetBodyWeight:   NewSetBodyWeightHandler(handlerDeps),
+		// The callback to view the user foods is handled separately below with prefix matching
+
+		// Navigation and Control Handlers
+		// These handlers manage user interface navigation
+		// We want this command to always return to the 'main menu' so to speak
+		CallbackDataBackToOptions: NewBackToOptionsHandler(handlerDeps, true),
 		// This one triggers the same event as `CallbackDataBackToOptions`
 		// but doesn't delete the previous state. This is important to maintain
 		// conversation context like if we send a meal plan to the user. We do not want
 		// the message to be deleted when they go back.
-		CallbackDataBackToOptionsNoDelete:  NewBackToOptionsHandler(handlerDeps, false),
-		CallbackDataAddMacroTargets:        NewMacroTargetsHandler(handlerDeps),
-		CallbackDataSetDietaryRestrictions: NewSetDietaryRestrictionsHandler(handlerDeps),
-		CallbackDataSetBodyWeight:          NewSetBodyWeightHandler(handlerDeps),
+		CallbackDataBackToOptionsNoDelete: NewBackToOptionsHandler(handlerDeps, false),
 
+		// Plan Review Handlers
+		// These handlers manage user acceptance or rejection of proposed meal plans
 		CallBackDataAcceptPlan: NewPlanAcceptanceHandler(handlerDeps, true),
 		CallbackDataRejectPlan: NewPlanAcceptanceHandler(handlerDeps, false),
 
-		// Feedback request handlers.
+		// Meal Plan Feedback Handlers
+		// These handlers collect and process user feedback on meal plans
 		CallbackDataMealPlanFeedbackStart: feedbackRequestHandler,
-
+		// Breakfast Feedback
 		CallbackDataMealPlanFeedbackBreakfastGood: feedbackRequestHandler,
 		CallbackDataMealPlanFeedbackBreakfastBad:  feedbackRequestHandler,
-
+		// Lunch Feedback
 		CallbackDataMealPlanFeedbackLunchGood: feedbackRequestHandler,
 		CallbackDataMealPlanFeedbackLunchBad:  feedbackRequestHandler,
-
+		// Dinner Feedback
 		CallbackDataMealPlanFeedbackDinnerGood: feedbackRequestHandler,
 		CallbackDataMealPlanFeedbackDinnerBad:  feedbackRequestHandler,
 	}
 
+	// Register exact match handlers first
 	for callbackData, handler := range callbackHandlers {
 		// Register handlers to the registry
 		s.handlers.Register(string(callbackData), handler)
@@ -146,6 +161,26 @@ func (s *BotService) RegisterHandlers() {
 			handler.Handle,
 		)
 	}
+
+	// Register prefix match handler for food pagination AFTER exact matches
+	viewUserFoodHandler := NewViewUserFoodHandler(handlerDeps)
+
+	// Register for potential lookup if needed elsewhere
+	s.handlers.Register(string(CallbackDataViewUserFoods), viewUserFoodHandler)
+
+	s.bot.RegisterHandler(tgbot.HandlerTypeCallbackQueryData,
+		// Use the constant prefix
+		string(CallbackDataViewUserFoodOffset),
+		// Match callbacks starting with the prefix
+		tgbot.MatchTypePrefix,
+		viewUserFoodHandler.Handle,
+	)
+	// Also register the initial exact match for viewing foods
+	s.bot.RegisterHandler(tgbot.HandlerTypeCallbackQueryData,
+		string(CallbackDataViewUserFoods),
+		tgbot.MatchTypeExact,
+		viewUserFoodHandler.Handle,
+	)
 
 	// Register message handler for conversation
 	s.bot.RegisterHandler(tgbot.HandlerTypeMessageText,
