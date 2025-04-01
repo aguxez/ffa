@@ -103,3 +103,31 @@ func (h *UserFoodHandler) editMessage(ctx context.Context, bot *tgbot.Bot, updat
 
 	return err
 }
+
+// ViewUserFoodHandler handles viewing user food preferences
+type ViewUserFoodHandler struct {
+	deps *HandlerDependencies
+}
+
+// NewViewUserFoodHandler creates a new ViewUserFoodHandler
+func NewViewUserFoodHandler(deps *HandlerDependencies) *ViewUserFoodHandler {
+	return &ViewUserFoodHandler{
+		deps: deps,
+	}
+}
+
+func (v *ViewUserFoodHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) {
+	userID := uint(update.CallbackQuery.From.ID)
+
+	logger := log.With().Str("handler", "ViewUserFoodHandler").Uint("userID", userID).Logger()
+
+	logger.Msg("Handling user food view")
+
+	userFoods, err := v.deps.DB.GetUserFoods(userID)
+	if err != nil {
+		logger.Err(err).Msg("Error finding user foods")
+		return
+	}
+
+	// Send message
+}

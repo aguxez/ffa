@@ -14,30 +14,47 @@ import (
 type CallbackData string
 
 const (
+	// Meal Plan Creation and Configuration Callbacks
+	// These callbacks handle the initial setup and configuration of meal plans
 	CallbackDataCreateMealPlan         CallbackData = "callback_create_meal_plan"
 	CallbackDataSetDietaryRestrictions CallbackData = "callback_set_dietary_restrictions"
 	CallbackDataAddUserFood            CallbackData = "callback_add_user_food"
-	CallbackDataAddPlanSchedule        CallbackData = "callback_add_plan_schedule"
-	CallbackDataPlanScheduleWeekly     CallbackData = "callback_plan_schedule_weekly"
-	CallbackDataPlanScheduleThreeDays  CallbackData = "callback_plan_schedule_three_days"
-	CallbackDataAddMacroTargets        CallbackData = "callback_add_macro_targets"
-	CallbackDataBackToOptions          CallbackData = "callback_back_to_options"
-	CallbackDataBackToOptionsNoDelete  CallbackData = "callback_back_to_options_no_delete"
-	CallbackDataSetBodyWeight          CallbackData = "callback_set_body_weight"
+	CallbackDataViewUserFoods          CallbackData = "callback_view_user_foods"
 
-	// Callback to accept or deny a plan whenever we send it
+	// Meal Plan Schedule Callbacks
+	// These callbacks handle the frequency and scheduling of meal plans
+	CallbackDataAddPlanSchedule       CallbackData = "callback_add_plan_schedule"
+	CallbackDataPlanScheduleWeekly    CallbackData = "callback_plan_schedule_weekly"
+	CallbackDataPlanScheduleThreeDays CallbackData = "callback_plan_schedule_three_days"
+
+	// User Profile and Nutrition Target Callbacks
+	// These callbacks handle user-specific data and nutritional goals
+	CallbackDataAddMacroTargets CallbackData = "callback_add_macro_targets"
+	CallbackDataSetBodyWeight   CallbackData = "callback_set_body_weight"
+
+	// Navigation and Control Callbacks
+	// These callbacks handle user interface navigation
+	CallbackDataBackToOptions         CallbackData = "callback_back_to_options"
+	CallbackDataBackToOptionsNoDelete CallbackData = "callback_back_to_options_no_delete"
+
+	// Plan Review Callbacks
+	// These callbacks handle user acceptance or rejection of proposed meal plans
 	CallBackDataAcceptPlan CallbackData = "callback_accept_plan"
 	CallbackDataRejectPlan CallbackData = "callback_reject_plan"
 
-	// Callback whenever we start asking for feedback on meal plans
+	// Meal Plan Feedback Callbacks
+	// These callbacks handle the collection of user feedback on meal plans
 	CallbackDataMealPlanFeedbackStart CallbackData = "callback_meal_plan_feedback_start"
 
+	// Breakfast Feedback
 	CallbackDataMealPlanFeedbackBreakfastGood CallbackData = "callback_meal_plan_feedback_breakfast_good"
 	CallbackDataMealPlanFeedbackBreakfastBad  CallbackData = "callback_meal_plan_feedback_breakfast_bad"
 
+	// Lunch Feedback
 	CallbackDataMealPlanFeedbackLunchGood CallbackData = "callback_meal_plan_feedback_lunch_good"
 	CallbackDataMealPlanFeedbackLunchBad  CallbackData = "callback_meal_plan_feedback_lunch_bad"
 
+	// Dinner Feedback
 	CallbackDataMealPlanFeedbackDinnerGood CallbackData = "callback_meal_plan_feedback_dinner_good"
 	CallbackDataMealPlanFeedbackDinnerBad  CallbackData = "callback_meal_plan_feedback_dinner_bad"
 )
