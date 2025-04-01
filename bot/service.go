@@ -118,7 +118,7 @@ func (s *BotService) RegisterHandlers() {
 		// These handlers manage user-specific data and nutritional goals
 		CallbackDataAddMacroTargets: NewMacroTargetsHandler(handlerDeps),
 		CallbackDataSetBodyWeight:   NewSetBodyWeightHandler(handlerDeps),
-		CallbackDataViewUserFoods:   NewUserFoodHandler(handlerDeps),
+		// The callback to view the user foods is handled separately below with prefix matching
 
 		// Navigation and Control Handlers
 		// These handlers manage user interface navigation
@@ -149,6 +149,7 @@ func (s *BotService) RegisterHandlers() {
 		CallbackDataMealPlanFeedbackDinnerBad:  feedbackRequestHandler,
 	}
 
+	// Register exact match handlers first
 	for callbackData, handler := range callbackHandlers {
 		// Register handlers to the registry
 		s.handlers.Register(string(callbackData), handler)
@@ -160,6 +161,26 @@ func (s *BotService) RegisterHandlers() {
 			handler.Handle,
 		)
 	}
+
+	// Register prefix match handler for food pagination AFTER exact matches
+	viewUserFoodHandler := NewViewUserFoodHandler(handlerDeps)
+
+	// Register for potential lookup if needed elsewhere
+	s.handlers.Register(string(CallbackDataViewUserFoods), viewUserFoodHandler)
+
+	s.bot.RegisterHandler(tgbot.HandlerTypeCallbackQueryData,
+		// Use the constant prefix
+		string(CallbackDataViewUserFoodOffset),
+		// Match callbacks starting with the prefix
+		tgbot.MatchTypePrefix,
+		viewUserFoodHandler.Handle,
+	)
+	// Also register the initial exact match for viewing foods
+	s.bot.RegisterHandler(tgbot.HandlerTypeCallbackQueryData,
+		string(CallbackDataViewUserFoods),
+		tgbot.MatchTypeExact,
+		viewUserFoodHandler.Handle,
+	)
 
 	// Register message handler for conversation
 	s.bot.RegisterHandler(tgbot.HandlerTypeMessageText,

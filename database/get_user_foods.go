@@ -1,15 +1,19 @@
 package database
 
-// GetUserFoods retrieves a list of food names for a given user from the database.
+// GetUserFoods retrieves a paginated list of food names for a given user.
 //
-// The function takes a database connection and a user ID as parameters.
-// It queries the database for foods associated with the specified user ID
-// and returns a slice of food names. It also returns an error if there is
-// an issue during the query.
-func (db *Database) GetUserFoods(userID uint) ([]string, error) {
+// It fetches `limit + 1` items starting from the `offset` to allow checking
+// if there's a next page without a separate count query.
+func (db *Database) GetUserFoods(userID uint, limit, offset int) ([]string, error) {
 	var foods []string
+	// Fetch limit + 1 to check if there are more items for the next page
 	err := db.Conn.
+		Model(&UserFood{}).
 		Where("user_id = ?", userID).
-		Find(&foods).Error
+		Order("created_at asc").
+		Limit(limit+1).
+		Offset(offset).
+		// Use Pluck for efficiency if only names are needed
+		Pluck("name", &foods).Error
 	return foods, err
 }

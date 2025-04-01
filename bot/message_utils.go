@@ -31,7 +31,7 @@ func InitialMenuMessageParams(chatID int64) *bot.SendMessageParams {
 					},
 					{
 						Text:         "View added foods",
-						CallbackData: string(CallbackDataViewUserFoods),
+						CallbackData: string(CallbackDataViewUserFoodOffset),
 					},
 				},
 				{

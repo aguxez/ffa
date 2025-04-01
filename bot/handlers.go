@@ -20,6 +20,8 @@ const (
 	CallbackDataSetDietaryRestrictions CallbackData = "callback_set_dietary_restrictions"
 	CallbackDataAddUserFood            CallbackData = "callback_add_user_food"
 	CallbackDataViewUserFoods          CallbackData = "callback_view_user_foods"
+	// This is used for paginationw hen viewing user foods
+	CallbackDataViewUserFoodOffset CallbackData = "view_food_offset_"
 
 	// Meal Plan Schedule Callbacks
 	// These callbacks handle the frequency and scheduling of meal plans
