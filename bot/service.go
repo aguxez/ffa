@@ -165,9 +165,6 @@ func (s *BotService) RegisterHandlers() {
 	// Register prefix match handler for food pagination AFTER exact matches
 	viewUserFoodHandler := NewViewUserFoodHandler(handlerDeps)
 
-	// Register for potential lookup if needed elsewhere
-	s.handlers.Register(string(CallbackDataViewUserFoods), viewUserFoodHandler)
-
 	s.bot.RegisterHandler(tgbot.HandlerTypeCallbackQueryData,
 		// Use the constant prefix
 		string(CallbackDataViewUserFoodOffset),
