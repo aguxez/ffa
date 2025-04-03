@@ -34,7 +34,6 @@ func (h *BackToOptionsHandler) Handle(ctx context.Context, bot *tgbot.Bot, updat
 
 	// Delete the message that triggered this callback if necessary
 	if h.shouldDeletePreviousMessage {
-
 		_, err := bot.DeleteMessage(ctx, &tgbot.DeleteMessageParams{
 			ChatID:    chatID,
 			MessageID: update.CallbackQuery.Message.Message.ID,
@@ -45,8 +44,14 @@ func (h *BackToOptionsHandler) Handle(ctx context.Context, bot *tgbot.Bot, updat
 		}
 	}
 
+	user, err := h.deps.DB.GetUser(userID)
+	if err != nil {
+		log.Err(err).Msg("Error finding user")
+		return
+	}
+
 	// Send the initial menu message
-	_, err := bot.SendMessage(ctx, InitialMenuMessageParams(chatID))
+	_, err = bot.SendMessage(ctx, InitialMenuMessageParams(chatID, user))
 	if err != nil {
 		log.Err(err).Msg("Error sending initial menu message")
 	}

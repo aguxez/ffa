@@ -59,6 +59,9 @@ const (
 	// Dinner Feedback
 	CallbackDataMealPlanFeedbackDinnerGood CallbackData = "callback_meal_plan_feedback_dinner_good"
 	CallbackDataMealPlanFeedbackDinnerBad  CallbackData = "callback_meal_plan_feedback_dinner_bad"
+
+	// Payments
+	CallbackDataMakePayment CallbackData = "callback_make_payment"
 )
 
 // Handler is the interface for all handlers

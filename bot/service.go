@@ -28,8 +28,13 @@ type BotService struct {
 
 // NewBotService creates a new BotService
 func NewBotService(stateManager *models.StateManager, db *database.Database, cfg config.AppConfig) (*BotService, error) {
+	opts := make([]tgbot.Option, 0)
+	if cfg.Environment == "development" {
+		opts = append(opts, tgbot.UseTestEnvironment())
+	}
+
 	// Create telegram bot
-	bot, err := tgbot.New(cfg.TelegramBotAPIKey)
+	bot, err := tgbot.New(cfg.TelegramBotAPIKey, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -99,6 +104,7 @@ func (s *BotService) RegisterHandlers() {
 	)
 
 	feedbackRequestHandler := NewMealPlanFeedbackHandler(handlerDeps)
+	paymentHandler := NewPaymentHandler(handlerDeps)
 
 	// Register callback handlers
 	callbackHandlers := map[CallbackData]Handler{
@@ -147,6 +153,9 @@ func (s *BotService) RegisterHandlers() {
 		// Dinner Feedback
 		CallbackDataMealPlanFeedbackDinnerGood: feedbackRequestHandler,
 		CallbackDataMealPlanFeedbackDinnerBad:  feedbackRequestHandler,
+
+		// Payments
+		CallbackDataMakePayment: paymentHandler,
 	}
 
 	// Register exact match handlers first
@@ -178,6 +187,17 @@ func (s *BotService) RegisterHandlers() {
 		tgbot.MatchTypeExact,
 		viewUserFoodHandler.Handle,
 	)
+
+	// These handlers are specifically for payments. Whenever we have a successful payment,
+	// we do not want it to go through the default conversational handler, but still use the
+	// payment handler
+	s.bot.RegisterHandlerMatchFunc(func(update *tgmodels.Update) bool {
+		return update.Message != nil && update.Message.SuccessfulPayment != nil
+	}, paymentHandler.Handle)
+
+	s.bot.RegisterHandlerMatchFunc(func(update *tgmodels.Update) bool {
+		return update.PreCheckoutQuery != nil
+	}, paymentHandler.Handle)
 
 	// Register message handler for conversation
 	s.bot.RegisterHandler(tgbot.HandlerTypeMessageText,
