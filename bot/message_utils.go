@@ -50,6 +50,12 @@ func InitialMenuMessageParams(chatID int64) *bot.SendMessageParams {
 						CallbackData: string(CallbackDataCreateMealPlan),
 					},
 				},
+				{
+					{
+						Text:         "Upgrade to premium",
+						CallbackData: string(CallbackDataMakePayment),
+					},
+				},
 			},
 		},
 	}

@@ -34,6 +34,7 @@ func NewDatabase(cfg config.AppConfig) (*Database, error) {
 		&UserDietaryRestriction{},
 		&UserMealPlan{},
 		&UserMealPlanFood{},
+		&UserPayment{},
 	)
 
 	return &Database{Conn: db, Config: cfg}, nil

@@ -21,6 +21,8 @@ type User struct {
 	UserMealPlans                   []UserMealPlan
 	NextMealPlanFeedbackRequestTime *time.Time `gorm:"index"`
 	ChatID                          *int64     `gorm:"index"`
+	IsPremium                       bool       `gorm:"not null;default:false"`
+	Payments                        []UserPayment
 }
 
 type UserFood struct {
@@ -70,4 +72,11 @@ type UserMealPlanFood struct {
 	UserMealPlanID uint   `gorm:"uniqueIndex:user_meal_plan_foods_user_meal_plan_id_name_idx;constraint:OnDelete:CASCADE;not null"`
 	Name           string `gorm:"uniqueIndex:user_meal_plan_foods_user_meal_plan_id_name_idx;not null"`
 	Category       string `gorm:"not null"`
+}
+
+type UserPayment struct {
+	gorm.Model
+
+	PaymentID string `gorm:"uniqueIndex:user_payments_payment_id_user_id_idx;not null"`
+	UserID    uint   `gorm:"uniqueIndex:user_payments_payment_id_user_id_idx;constraint:OnDelete:CASCADE;not null"`
 }
