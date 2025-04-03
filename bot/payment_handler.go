@@ -8,6 +8,10 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+const (
+	PREMIUM_PRICE_XTR = 1500
+)
+
 // PaymentHandler handles payment
 type PaymentHandler struct {
 	deps *HandlerDependencies
@@ -55,6 +59,10 @@ func (h *PaymentHandler) handleInitialPaymentRequest(ctx context.Context, bot *t
 	_, err := bot.SendInvoice(ctx, &tgbot.SendInvoiceParams{
 		ChatID: userID,
 		Title:  "RawPlan Premium",
+		// We set the payload as an empty string because we do not have various products
+		// so the purchase will be for a single item and we do not need metadata
+		// for this as of now.
+		Payload: "premium-purchase",
 		Description: `
 Access to all features of RawPlan and future developments.
 Get a higher limit number of meal plans per week and timed follow-ups.
@@ -64,7 +72,7 @@ This is a non-recurring subscription to get all features of the product!
 		Prices: []tgmodels.LabeledPrice{
 			{
 				Label:  "Premium test",
-				Amount: 100,
+				Amount: PREMIUM_PRICE_XTR,
 			},
 		},
 	})
@@ -118,5 +126,15 @@ There was an error processing your successful payment. This has been informed.
 		Text: `
 You have successfully upgraded to RawPlan Premium!
 `,
+		ReplyMarkup: &tgmodels.InlineKeyboardMarkup{
+			InlineKeyboard: [][]tgmodels.InlineKeyboardButton{
+				{
+					{
+						Text:         "↼ Back to options",
+						CallbackData: string(CallbackDataBackToOptions),
+					},
+				},
+			},
+		},
 	})
 }

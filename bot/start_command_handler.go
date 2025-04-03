@@ -45,14 +45,14 @@ func (h *StartCommandHandler) Handle(ctx context.Context, bot *tgbot.Bot, update
 	h.deps.StateManager.SetUserState(userID, models.ConversationStageStart)
 
 	// Ensure user exists in database
-	_, err := h.deps.DB.GetOrCreateUser(userID, chatID)
+	user, err := h.deps.DB.GetOrCreateUser(userID, chatID)
 	if err != nil {
 		log.Err(err).Msg("Error finding or creating user")
 		return
 	}
 
 	// Send welcome message with options
-	_, err = bot.SendMessage(ctx, InitialMenuMessageParams(chatID))
+	_, err = bot.SendMessage(ctx, InitialMenuMessageParams(chatID, user))
 	if err != nil {
 		log.Err(err).Msg("Error sending welcome message")
 	}
