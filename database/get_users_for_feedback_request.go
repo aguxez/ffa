@@ -13,6 +13,7 @@ func (db *Database) GetUsersForFeedbackRequest(limit int) ([]User, error) {
 		Joins("JOIN user_meal_plans uml ON uml.user_id = users.id AND uml.created_at = latest.latest_approved_date").
 		Where(`
 		users.chat_id IS NOT NULL AND
+		users.is_premium AND
 		uml.is_accepted = true AND
 		uml.created_at >= ? AND
 		users.next_meal_plan_feedback_request_time IS NOT NULL AND
