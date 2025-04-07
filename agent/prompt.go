@@ -64,6 +64,7 @@ You are a personal nutritionist. Based on the following meal plan items, create 
 		incur in monetary loss.
 	4. Once again. DO NOT ADD Markdown to the text. No asterisks or other symbols are allowed for your string output.
 	5. Explain the nutritional balance, how it addresses the user's preferences from context, and the overall benefits.
+	6. Do not be verbose in your response. This needs to be easily digestible by the reader, so, do a summary.
 
 Context:
 {{.PlanFromChain1}}
