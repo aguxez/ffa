@@ -13,7 +13,10 @@ type MealPlanFeedbackInput struct {
 func (db *Database) SetMealPlanFeedback(userID uint, input MealPlanFeedbackInput) error {
 	// Return the latest accepted meal plan for the user
 	var mealPlan UserMealPlan
-	if err := db.Conn.Where("user_id = ? AND is_accepted = ?", userID, true).Order("created_at DESC").First(&mealPlan).Error; err != nil {
+	if err := db.Conn.
+		Where("user_id = ? AND accepted_at IS NOT NULL", userID).
+		Order("accepted_at DESC").
+		First(&mealPlan).Error; err != nil {
 		return err
 	}
 
