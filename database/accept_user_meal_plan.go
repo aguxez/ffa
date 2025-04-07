@@ -21,7 +21,7 @@ func (db *Database) AcceptUserMealPlan(userID uint, messageID int) error {
 		err := tx.Model(&UserMealPlan{}).
 			Where("user_id = ?", userID).
 			Where("message_id = ?", messageID).
-			Update("is_accepted", true).Error
+			Update("accepted_at", time.Now()).Error
 		if err != nil {
 			return err
 		}

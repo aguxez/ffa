@@ -6,25 +6,30 @@ import "time"
 // meal plan feedback request.
 func (db *Database) GetUsersForFeedbackRequest(limit int) ([]User, error) {
 	var users []User
+
+	// This subquery finds the latest accepted meal plan for each user
+	subquery := db.Conn.Table("user_meal_plans").
+		Select("user_id, MAX(accepted_at) as latest_accepted_at").
+		Where("accepted_at IS NOT NULL").
+		Group("user_id")
+
 	err := db.Conn.
-		// Ensure we're only focusing on the latest approved meal plan since users can
-		// have multiple approved plans within the same window.
-		Joins("JOIN (SELECT user_id, MAX(created_at) as latest_approved_date FROM user_meal_plans WHERE is_accepted = true GROUP BY user_id) latest ON latest.user_id = users.id").
-		Joins("JOIN user_meal_plans uml ON uml.user_id = users.id AND uml.created_at = latest.latest_approved_date").
+		Table("users").
+		Joins("JOIN (?) AS latest_plans ON users.id = latest_plans.user_id", subquery).
+		Joins("JOIN user_meal_plans AS uml ON uml.user_id = users.id AND uml.accepted_at = latest_plans.latest_accepted_at").
 		Where(`
-		users.chat_id IS NOT NULL AND
-		users.is_premium AND
-		uml.is_accepted = true AND
-		uml.created_at >= ? AND
-		users.next_meal_plan_feedback_request_time IS NOT NULL AND
-		users.next_meal_plan_feedback_request_time < ?`,
+					users.chat_id IS NOT NULL AND
+					users.is_premium AND
+					uml.created_at >= ? AND
+					users.next_meal_plan_feedback_request_time IS NOT NULL AND
+					users.next_meal_plan_feedback_request_time < ?`,
 			// Only accepted plans that are no older than 3 days ago
 			time.Now().AddDate(0, 0, -3),
 			// Only plans where the request time has already passed
 			time.Now()).
-		Distinct("users.id").
 		Limit(limit).
 		Select("users.id, users.chat_id").
 		Find(&users).Error
+
 	return users, err
 }

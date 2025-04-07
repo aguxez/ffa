@@ -48,8 +48,16 @@ func (h *MealPlanHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tg
 		return
 	}
 
+	// Get last accepted meal plan
+	lastAcceptedMealPlan, err := h.deps.DB.GetUserLastAcceptedMealPlan(userID)
+	if err != nil {
+		log.Err(err).Msg("Error getting last accepted meal plan")
+		ErrorResponse(ctx, bot, chatID, "There was an error getting your last accepted meal plan. This has been informed.")
+		return
+	}
+
 	// Generate meal plan
-	plan, err := h.deps.NutritionAgent.GenerateMealPlan(ctx, user)
+	plan, err := h.deps.NutritionAgent.GenerateMealPlan(ctx, user, lastAcceptedMealPlan)
 	if err != nil {
 		log.Err(err).Msg("Error generating meal plan")
 		ErrorResponse(ctx, bot, chatID, "There was an error generating the meal plan. This has been informed.")

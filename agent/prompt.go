@@ -32,6 +32,9 @@ func NewNutritionPromptTemplate() string {
 	Context:
 	{{.CombinedInput}}
 
+	Last accepted meal plan context (null means no previous plan):
+	{{.PreviousPlanInput}}
+
 	Your Final Answer must be in this specific JSON format:
 	{
 			"plan": [
@@ -86,8 +89,7 @@ You are a personal nutritionist specializing in meal prep. Based on the followin
 	2. Your response MUST respect the JSON format you will be provided. If you encounter an error,
 			return an empty JSON object with the provided keys so it can be parsed.
 	3. Do NOT use markdown or any other type of markup. No asterisks or other symbols are allowed for your string output.
-		DO NOT add any other string other than the JSON, otherwise you wil mess up the parsing of the response and this can
-		incur in monetary loss.
+		DO NOT add any other string other than the JSON, otherwise you wil mess up the parsing.
 
 Meal Plan Items:
 {{.PlanFromChain1}}

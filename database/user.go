@@ -53,8 +53,7 @@ type UserDietaryRestriction struct {
 type UserMealPlan struct {
 	gorm.Model
 
-	UserID     uint `gorm:"constraint:OnDelete:CASCADE;not null"`
-	IsAccepted bool `gorm:"not null;default:false"`
+	UserID uint `gorm:"constraint:OnDelete:CASCADE;not null"`
 	// Represents the message ID that has the meal plan attached
 	MessageID int                `gorm:"not null"`
 	Foods     []UserMealPlanFood `gorm:"foreignKey:UserMealPlanID"`
@@ -63,7 +62,7 @@ type UserMealPlan struct {
 	IsLunchLiked     bool `gorm:"not null;default:false"`
 	IsDinnerLiked    bool `gorm:"not null;default:false"`
 
-	// TODO: Add 'accepted_at' column for easier access
+	AcceptedAt time.Time `gorm:"index;default:NULL"`
 }
 
 type UserMealPlanFood struct {
