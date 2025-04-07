@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -40,9 +41,9 @@ func NewNutritionAgent(llm *openai.LLM, state *models.StateManager) *NutritionAg
 // Large Language Model to generate a meal plan based on the user's preferences and
 // body weight. Then it creates a shopping list for this plan. The user is expected
 // to have a non-empty list of preferred foods and a non-nil weight.
-func (n *NutritionAgent) GenerateMealPlan(ctx context.Context, user *database.User) (models.CompleteMealPlan, error) {
+func (n *NutritionAgent) GenerateMealPlan(ctx context.Context, user *database.User, lastMealPlan *database.UserMealPlan) (models.CompleteMealPlan, error) {
 	// First ask for a meal plan
-	mealResponse, err := n.generateMealPlanFromLLM(ctx, user)
+	mealResponse, err := n.generateMealPlanFromLLM(ctx, user, lastMealPlan)
 	if err != nil {
 		return models.CompleteMealPlan{}, err
 	}
@@ -84,7 +85,7 @@ func (n *NutritionAgent) GenerateMealPlan(ctx context.Context, user *database.Us
 // It formats the input into a structured prompt and calls the LLM to generate a meal plan.
 //
 // The function will return an error if there was an issue with the LLM call or unmarshalling the response.
-func (n *NutritionAgent) generateMealPlanFromLLM(ctx context.Context, user *database.User) (models.MealPlan, error) {
+func (n *NutritionAgent) generateMealPlanFromLLM(ctx context.Context, user *database.User, lastMealPlan *database.UserMealPlan) (models.MealPlan, error) {
 	log.Debug().Msg("Generating meal plan from LLM")
 
 	// More structured formatting of input to help the LLM
@@ -126,9 +127,22 @@ func (n *NutritionAgent) generateMealPlanFromLLM(ctx context.Context, user *data
 		planDurationDays,
 	)
 
+	var previousPlanInput strings.Builder
+	if lastMealPlan != nil {
+		previousPlanInput.WriteString("Previous Plan:\n")
+		for _, meal := range lastMealPlan.Foods {
+			previousPlanInput.WriteString(fmt.Sprintf("- %s (category: %s)\n", meal.Name, meal.Category))
+		}
+
+		previousPlanInput.WriteString(fmt.Sprintf("Was breakfast liked: %b\n", lastMealPlan.IsBreakfastLiked))
+		previousPlanInput.WriteString(fmt.Sprintf("Was lunch liked: %b\n", lastMealPlan.IsLunchLiked))
+		previousPlanInput.WriteString(fmt.Sprintf("Was dinner liked: %b\n", lastMealPlan.IsDinnerLiked))
+	}
+
 	promptTemplate := prompts.NewPromptTemplate(NewNutritionPromptTemplate(), []string{"CombinedInput"})
 	promptInput := map[string]any{
-		"CombinedInput": combinedInput,
+		"CombinedInput":     combinedInput,
+		"PreviousPlanInput": previousPlanInput.String(),
 	}
 
 	prompt, err := promptTemplate.Format(promptInput)

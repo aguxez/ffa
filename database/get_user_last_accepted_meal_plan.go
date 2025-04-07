@@ -12,10 +12,13 @@ func (db *Database) GetUserLastAcceptedMealPlan(userID uint) (*UserMealPlan, err
 	var mealPlan UserMealPlan
 
 	err := db.Conn.
-		Where("user_id = ? AND ", userID).
-		Where("accepted_at IS NOT NULL").
+		Where("user_id = ? AND accepted_at IS NOT NULL", userID).
 		Order("accepted_at DESC").
+		Preload("Foods").
 		First(&mealPlan).Error
+	if err != nil {
+		return nil, err
+	}
 
 	return &mealPlan, err
 }

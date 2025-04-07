@@ -32,6 +32,9 @@ func NewNutritionPromptTemplate() string {
 	Context:
 	{{.CombinedInput}}
 
+	Last accepted meal plan context (null means no previous plan):
+	{{.PreviousPlanInput}}
+
 	Your Final Answer must be in this specific JSON format:
 	{
 			"plan": [

@@ -62,7 +62,7 @@ type UserMealPlan struct {
 	IsLunchLiked     bool `gorm:"not null;default:false"`
 	IsDinnerLiked    bool `gorm:"not null;default:false"`
 
-	AcceptedAt time.Time `gorm:"index;default:false"`
+	AcceptedAt time.Time `gorm:"index;default:NULL"`
 }
 
 type UserMealPlanFood struct {
