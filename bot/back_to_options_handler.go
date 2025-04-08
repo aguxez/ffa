@@ -24,9 +24,16 @@ func NewBackToOptionsHandler(deps *HandlerDependencies, shouldDeletePreviousMess
 }
 
 func (h *BackToOptionsHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) {
-	log.Debug().Str("handler", "BackToOptionsHandler").Msg("Handling back to options")
-
 	userID := uint(update.CallbackQuery.From.ID)
+
+	logger := log.
+		With().
+		Uint("userID", userID).
+		Str("handler", "BackToOptionsHandler").
+		Logger()
+
+	logger.Debug().Msg("Handling back to options")
+
 	chatID := update.CallbackQuery.Message.Message.Chat.ID
 
 	// Reset user state
@@ -39,20 +46,26 @@ func (h *BackToOptionsHandler) Handle(ctx context.Context, bot *tgbot.Bot, updat
 			MessageID: update.CallbackQuery.Message.Message.ID,
 		})
 		if err != nil {
-			log.Err(err).Msg("Error deleting message")
+			logger.Err(err).Msg("Error deleting message")
 			return
 		}
 	}
 
 	user, err := h.deps.DB.GetUser(userID)
 	if err != nil {
-		log.Err(err).Msg("Error finding user")
+		logger.Err(err).Msg("Error finding user")
+		return
+	}
+
+	numberOfCreatedPlans, err := h.deps.DB.GetCountOfUserPlans(userID)
+	if err != nil {
+		logger.Err(err).Msg("Error getting number of created plans")
 		return
 	}
 
 	// Send the initial menu message
-	_, err = bot.SendMessage(ctx, InitialMenuMessageParams(chatID, user))
+	_, err = bot.SendMessage(ctx, InitialMenuMessageParams(chatID, user, numberOfCreatedPlans))
 	if err != nil {
-		log.Err(err).Msg("Error sending initial menu message")
+		logger.Err(err).Msg("Error sending initial menu message")
 	}
 }

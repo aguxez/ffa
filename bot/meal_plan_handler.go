@@ -23,35 +23,54 @@ func NewMealPlanHandler(deps *HandlerDependencies) *MealPlanHandler {
 
 // Handle handles the meal plan creation
 func (h *MealPlanHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) {
-	log.Debug().Str("handler", "MealPlanHandler").Msg("Handling meal plan creation")
-
 	chatID := update.CallbackQuery.Message.Message.Chat.ID
 	userID := uint(update.CallbackQuery.From.ID)
+
+	logger := log.
+		With().
+		Uint("userID", userID).
+		Str("handler", "MealPlanHandler").
+		Logger()
+
+	logger.Debug().Msg("Handling meal plan creation")
 
 	// Load user and associations
 	user, err := h.deps.DB.GetUser(userID)
 	if err != nil {
-		log.Err(err).Msg("Error getting user foods")
+		logger.Err(err).Msg("Error getting user foods")
 		ErrorResponse(ctx, bot, chatID, "Failed to retrieve your food preferences.")
 		return
 	}
 
+	// Check if user has not reached the maximum number of meal plans
+	numberOfPlansCreated, err := h.deps.DB.GetCountOfUserPlans(user.ID)
+	if err != nil {
+		logger.Err(err).Msg("Error getting count of user plans")
+		ErrorResponse(ctx, bot, chatID, "Failed to retrieve user data.")
+		return
+	}
+	if numberOfPlansCreated >= MAX_FREE_USERS_PLANS {
+		logger.Debug().Msg("User has reached the maximum number of meal plans")
+		ErrorResponse(ctx, bot, chatID, "You have reached the maximum number of meal plans. You can upgrade to enjoy all features!")
+		return
+	}
+
 	if len(user.Foods) == 0 {
-		log.Debug().Uint("user_id", userID).Msg("No user foods found")
+		logger.Debug().Msg("No user foods found")
 		ErrorResponse(ctx, bot, chatID, "Please add your food preferences first.")
 		return
 	}
 
 	// Remove the markup button
 	if err := h.removeMarkupAndEditMessage(ctx, bot, update); err != nil {
-		log.Err(err).Msg("Error removing markup")
+		logger.Err(err).Msg("Error removing markup")
 		return
 	}
 
 	// Get last accepted meal plan
 	lastAcceptedMealPlan, err := h.deps.DB.GetUserLastAcceptedMealPlan(userID)
 	if err != nil {
-		log.Err(err).Msg("Error getting last accepted meal plan")
+		logger.Err(err).Msg("Error getting last accepted meal plan")
 		ErrorResponse(ctx, bot, chatID, "There was an error getting your last accepted meal plan. This has been informed.")
 		return
 	}
@@ -59,22 +78,22 @@ func (h *MealPlanHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tg
 	// Generate meal plan
 	plan, err := h.deps.NutritionAgent.GenerateMealPlan(ctx, user, lastAcceptedMealPlan)
 	if err != nil {
-		log.Err(err).Msg("Error generating meal plan")
+		logger.Err(err).Msg("Error generating meal plan")
 		ErrorResponse(ctx, bot, chatID, "There was an error generating the meal plan. This has been informed.")
 		return
 	}
 
-	log.Debug().Msg("Created meal plan")
+	logger.Debug().Msg("Created meal plan")
 
 	// Generate PDF
 	doc, err := GenerateDocFromMealPlan(plan)
 	if err != nil {
-		log.Err(err).Msg("Error generating document")
+		logger.Err(err).Msg("Error generating document")
 		ErrorResponse(ctx, bot, chatID, "There was an error generating your document. This has been informed.")
 		return
 	}
 
-	log.Debug().Msg("Generated document from meal plan")
+	logger.Debug().Msg("Generated document from meal plan")
 
 	// Send document
 	msg, err := bot.SendDocument(ctx, &tgbot.SendDocumentParams{
@@ -100,7 +119,7 @@ func (h *MealPlanHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tg
 		},
 	})
 	if err != nil {
-		log.Err(err).Msg("Error sending document")
+		logger.Err(err).Msg("Error sending document")
 		ErrorResponse(ctx, bot, chatID, "There was an error sending your document. This has been informed.")
 		return
 	}
@@ -115,9 +134,8 @@ func (h *MealPlanHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tg
 	}
 
 	if err := h.deps.DB.SaveUserMealPlan(userID, msg.ID, userMealPlanInput); err != nil {
-		log.Err(err).
+		logger.Err(err).
 			Int("messageID", msg.ID).
-			Uint("userID", userID).
 			Msg("Error saving user meal plan")
 		return
 	}

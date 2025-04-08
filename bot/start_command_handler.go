@@ -23,8 +23,6 @@ func NewStartCommandHandler(deps *HandlerDependencies) *StartCommandHandler {
 
 // Handle handles the /start command
 func (h *StartCommandHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) {
-	log.Debug().Str("handler", "StartCommandHandler").Msg("Handling start command")
-
 	var userID uint
 	var chatID int64
 
@@ -41,19 +39,32 @@ func (h *StartCommandHandler) Handle(ctx context.Context, bot *tgbot.Bot, update
 		chatID = update.CallbackQuery.Message.Message.Chat.ID
 	}
 
+	logger := log.
+		With().
+		Uint("userID", userID).
+		Str("handler", "StartCommandHandler").
+		Logger()
+
+	logger.Debug().Msg("Handling start command")
+
 	// Initialize user state
 	h.deps.StateManager.SetUserState(userID, models.ConversationStageStart)
 
 	// Ensure user exists in database
 	user, err := h.deps.DB.GetOrCreateUser(userID, chatID)
 	if err != nil {
-		log.Err(err).Msg("Error finding or creating user")
+		logger.Err(err).Msg("Error finding or creating user")
 		return
 	}
 
-	// Send welcome message with options
-	_, err = bot.SendMessage(ctx, InitialMenuMessageParams(chatID, user))
+	numberOfCreatedPlans, err := h.deps.DB.GetCountOfUserPlans(user.ID)
 	if err != nil {
-		log.Err(err).Msg("Error sending welcome message")
+		logger.Err(err).Msg("Error getting number of created plans")
+	}
+
+	// Send welcome message with options
+	_, err = bot.SendMessage(ctx, InitialMenuMessageParams(chatID, user, numberOfCreatedPlans))
+	if err != nil {
+		logger.Err(err).Msg("Error sending welcome message")
 	}
 }
