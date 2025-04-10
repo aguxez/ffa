@@ -21,6 +21,7 @@ func (db *Database) GetUsersForFeedbackRequest(limit int) ([]User, error) {
 					users.chat_id IS NOT NULL AND
 					users.is_premium AND
 					uml.created_at >= ? AND
+					uml.plan_type = 'weekdays' AND
 					users.next_meal_plan_feedback_request_time IS NOT NULL AND
 					users.next_meal_plan_feedback_request_time < ?`,
 			// Only accepted plans that are no older than 3 days ago

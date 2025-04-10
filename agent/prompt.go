@@ -2,7 +2,7 @@ package agent
 
 import "fmt"
 
-// NewNutritionPromptTemplate returns a string template for generating meal plans using a conversational agent.
+// NewMealPlanPromptTemplate returns a string template for generating meal plans using a conversational agent.
 // The template provides a structured format for the agent to follow when interacting with users
 // as a personal nutritionist. It leverages historical meal plans and tool access to generate
 // comprehensive meal plans that meet user-defined macro targets, include diverse food options,
@@ -11,7 +11,7 @@ import "fmt"
 // of five meals per day, including a protein shake, and provide weekday portions with daily macro
 // breakdowns. The response must be terminal-displayable, with explanations and preparations that
 // incorporate color compatibility.
-func NewNutritionPromptTemplate() string {
+func NewMealPlanPromptTemplate() string {
 	return `
 	You are a personal nutritionist with access to historical meal plans and their outcomes.
 
@@ -25,9 +25,15 @@ func NewNutritionPromptTemplate() string {
 	4. Do NOT use markdown for your string output. DO NOT add any other string other
 		than the JSON, otherwise you wil mess up the parsing of the response and this can
 		incur in monetary loss.
-	5. Be creative with your suggestions as long as they can be meal prepped.
-		 For the weekdays, this is crucial since the idea is to prepare in advance.
-	6. Take dietary restrictions into consideration. Only offer foods that respect them.
+	5. Take dietary restrictions into consideration. Only offer foods that respect them.
+	6. Generate a maximum of two foods per category.
+
+	This is a {{.PlanType}} plan. Try to be adventureous with your guesstions. However, for weekdays, keep in mind
+	food needs to be cooked in advance. For weekends this is not a necessary since it's only Saturday and Sunday.
+	Food can be cooked the same days and variety is favored over the weekdays benefits to have a break from routine.
+
+	For weekends, try to be a bit more adventurous with the
+	food to accomodate a break from routine from weekdays.
 
 	Context:
 	{{.CombinedInput}}
@@ -68,6 +74,8 @@ You are a personal nutritionist. Based on the following meal plan items, create 
 	4. Once again. DO NOT ADD Markdown to the text. No asterisks or other symbols are allowed for your string output.
 	5. Explain the nutritional balance, how it addresses the user's preferences from context, and the overall benefits.
 	6. Do not be verbose in your response. This needs to be easily digestible by the reader, so, do a summary.
+
+This meal plan is for a {{.PlanType}} plan.
 
 Context:
 {{.PlanFromChain1}}

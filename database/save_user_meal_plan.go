@@ -6,12 +6,15 @@ type UserMealPlanFoodInput struct {
 }
 
 // SaveUserMealPlan inserts a UserMealPlan into the database.
-// It takes a UserMealPlan and a GORM database object as parameters.
-// It returns an error if there was an issue with the database call.
-func (db *Database) SaveUserMealPlan(userID uint, messageID int, foods []UserMealPlanFoodInput) error {
+func (db *Database) SaveUserMealPlan(userID uint,
+	messageID int,
+	planType PlanType,
+	foods []UserMealPlanFoodInput,
+) error {
 	mealPlan := UserMealPlan{
 		UserID:    userID,
 		MessageID: messageID,
+		PlanType:  planType,
 	}
 
 	for _, food := range foods {
