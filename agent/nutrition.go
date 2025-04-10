@@ -41,15 +41,19 @@ func NewNutritionAgent(llm *openai.LLM, state *models.StateManager) *NutritionAg
 // Large Language Model to generate a meal plan based on the user's preferences and
 // body weight. Then it creates a shopping list for this plan. The user is expected
 // to have a non-empty list of preferred foods and a non-nil weight.
-func (n *NutritionAgent) GenerateMealPlan(ctx context.Context, user *database.User, lastMealPlan *database.UserMealPlan) (models.CompleteMealPlan, error) {
+func (n *NutritionAgent) GenerateMealPlan(ctx context.Context,
+	user *database.User,
+	lastMealPlan *database.UserMealPlan,
+	planType database.PlanType,
+) (models.CompleteMealPlan, error) {
 	// First ask for a meal plan
-	mealResponse, err := n.generateMealPlanFromLLM(ctx, user, lastMealPlan)
+	mealResponse, err := n.generateMealPlanFromLLM(ctx, user, lastMealPlan, planType)
 	if err != nil {
 		return models.CompleteMealPlan{}, err
 	}
 
 	// Then ask for a meal plan explanation
-	explanationResponse, err := n.generateMealPlanExplanationFromLLM(ctx, mealResponse)
+	explanationResponse, err := n.generateMealPlanExplanationFromLLM(ctx, mealResponse, planType)
 	if err != nil {
 		return models.CompleteMealPlan{}, err
 	}
@@ -66,11 +70,6 @@ func (n *NutritionAgent) GenerateMealPlan(ctx context.Context, user *database.Us
 		return models.CompleteMealPlan{}, err
 	}
 
-	log.
-		Debug().
-		Str("explanationResponse", explanationResponse.PlanExplanation).
-		Msg("Debug explanationResponse")
-
 	return models.CompleteMealPlan{
 		MealPlan:            mealResponse,
 		MealPlanExplanation: explanationResponse,
@@ -85,7 +84,11 @@ func (n *NutritionAgent) GenerateMealPlan(ctx context.Context, user *database.Us
 // It formats the input into a structured prompt and calls the LLM to generate a meal plan.
 //
 // The function will return an error if there was an issue with the LLM call or unmarshalling the response.
-func (n *NutritionAgent) generateMealPlanFromLLM(ctx context.Context, user *database.User, lastMealPlan *database.UserMealPlan) (models.MealPlan, error) {
+func (n *NutritionAgent) generateMealPlanFromLLM(ctx context.Context,
+	user *database.User,
+	lastMealPlan *database.UserMealPlan,
+	planType database.PlanType,
+) (models.MealPlan, error) {
 	log.Debug().Msg("Generating meal plan from LLM")
 
 	// More structured formatting of input to help the LLM
@@ -139,10 +142,11 @@ func (n *NutritionAgent) generateMealPlanFromLLM(ctx context.Context, user *data
 		previousPlanInput.WriteString(fmt.Sprintf("Was dinner liked: %b\n", lastMealPlan.IsDinnerLiked))
 	}
 
-	promptTemplate := prompts.NewPromptTemplate(NewNutritionPromptTemplate(), []string{"CombinedInput"})
+	promptTemplate := prompts.NewPromptTemplate(NewMealPlanPromptTemplate(), []string{"CombinedInput"})
 	promptInput := map[string]any{
 		"CombinedInput":     combinedInput,
 		"PreviousPlanInput": previousPlanInput.String(),
+		"PlanType":          planType,
 	}
 
 	prompt, err := promptTemplate.Format(promptInput)
@@ -166,12 +170,16 @@ func (n *NutritionAgent) generateMealPlanFromLLM(ctx context.Context, user *data
 // generateMealPlanExplanationFromLLM generates a comprehensive explanation for a given meal plan.
 // It formats the input meal plan into a structured prompt and calls the LLM to generate the explanation.
 // The function will return an error if there was an issue with the LLM call or unmarshalling the response.
-func (n *NutritionAgent) generateMealPlanExplanationFromLLM(ctx context.Context, mealPlan models.MealPlan) (models.MealPlanExplanation, error) {
+func (n *NutritionAgent) generateMealPlanExplanationFromLLM(ctx context.Context,
+	mealPlan models.MealPlan,
+	planType database.PlanType,
+) (models.MealPlanExplanation, error) {
 	log.Debug().Msg("Generating meal plan explanation from LLM")
 
 	promptTemplate := prompts.NewPromptTemplate(NewMealPlanExplanationTemplate(), []string{"PlanFromChain1"})
 	promptInput := map[string]any{
 		"PlanFromChain1": mealPlan.Plan,
+		"PlanType":       planType,
 	}
 
 	prompt, err := promptTemplate.Format(promptInput)

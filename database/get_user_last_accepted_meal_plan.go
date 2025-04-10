@@ -8,11 +8,11 @@ package database
 //
 // The function takes a user ID as parameter and returns a pointer to a UserMealPlan
 // and an error.
-func (db *Database) GetUserLastAcceptedMealPlan(userID uint) (*UserMealPlan, error) {
+func (db *Database) GetUserLastAcceptedMealPlan(userID uint, planType PlanType) (*UserMealPlan, error) {
 	var mealPlan UserMealPlan
 
 	err := db.Conn.
-		Where("user_id = ? AND accepted_at IS NOT NULL", userID).
+		Where("user_id = ? AND accepted_at IS NOT NULL AND plan_type = ?", userID, planType).
 		Order("accepted_at DESC").
 		Preload("Foods").
 		First(&mealPlan).Error

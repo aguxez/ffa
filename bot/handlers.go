@@ -22,6 +22,7 @@ const (
 	CallbackDataViewUserFoods          CallbackData = "callback_view_user_foods"
 	// This is used for paginationw hen viewing user foods
 	CallbackDataViewUserFoodOffset CallbackData = "view_food_offset_"
+	CallbackDataCreateWeekendPlan  CallbackData = "callback_create_weekend_plan"
 
 	// Meal Plan Schedule Callbacks
 	// These callbacks handle the frequency and scheduling of meal plans

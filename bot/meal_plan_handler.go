@@ -12,12 +12,15 @@ import (
 // MealPlanHandler handles meal plan creation
 type MealPlanHandler struct {
 	deps *HandlerDependencies
+	// This helps us determine which type of plan to generate when handling requests
+	planType database.PlanType
 }
 
 // NewMealPlanHandler creates a new MealPlanHandler
-func NewMealPlanHandler(deps *HandlerDependencies) *MealPlanHandler {
+func NewMealPlanHandler(deps *HandlerDependencies, planType database.PlanType) *MealPlanHandler {
 	return &MealPlanHandler{
-		deps: deps,
+		deps:     deps,
+		planType: planType,
 	}
 }
 
@@ -30,6 +33,7 @@ func (h *MealPlanHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tg
 		With().
 		Uint("userID", userID).
 		Str("handler", "MealPlanHandler").
+		Str("planType", string(h.planType)).
 		Logger()
 
 	logger.Debug().Msg("Handling meal plan creation")
@@ -42,6 +46,33 @@ func (h *MealPlanHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tg
 		return
 	}
 
+	if h.planType == database.PlanTypeWeekdays {
+		h.handleWeekdaysPlanGeneration(ctx, bot, update, user)
+		return
+	}
+
+	if h.planType == database.PlanTypeWeekends {
+		h.handleWeekendPlanGeneration(ctx, bot, update, user)
+		return
+	}
+}
+
+// handleWeekdaysPlanGeneration generates a meal plan for weekdays
+func (h *MealPlanHandler) handleWeekdaysPlanGeneration(ctx context.Context,
+	bot *tgbot.Bot,
+	update *tgmodels.Update,
+	user *database.User,
+) {
+	chatID := update.CallbackQuery.Message.Message.Chat.ID
+	userID := uint(update.CallbackQuery.From.ID)
+
+	logger := log.
+		With().
+		Uint("userID", userID).
+		Logger()
+
+	logger.Debug().Msg("Handling weekdays plan generation")
+
 	// Check if user has not reached the maximum number of meal plans
 	numberOfPlansCreated, err := h.deps.DB.GetCountOfUserPlans(user.ID)
 	if err != nil {
@@ -49,26 +80,51 @@ func (h *MealPlanHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tg
 		ErrorResponse(ctx, bot, chatID, "Failed to retrieve user data.")
 		return
 	}
-	if numberOfPlansCreated >= MAX_FREE_USERS_PLANS {
+	if numberOfPlansCreated >= MAX_FREE_USERS_PLANS && !user.IsPremium {
 		logger.Debug().Msg("User has reached the maximum number of meal plans")
 		ErrorResponse(ctx, bot, chatID, "You have reached the maximum number of meal plans. You can upgrade to enjoy all features!")
 		return
 	}
 
-	if len(user.Foods) == 0 {
-		logger.Debug().Msg("No user foods found")
-		ErrorResponse(ctx, bot, chatID, "Please add your food preferences first.")
-		return
-	}
+	h.generatePlan(ctx, bot, update, user)
+}
+
+// handleWeekendPlanGeneration generates a meal plan for weekends
+func (h *MealPlanHandler) handleWeekendPlanGeneration(ctx context.Context,
+	bot *tgbot.Bot,
+	update *tgmodels.Update,
+	user *database.User,
+) {
+	userID := uint(update.CallbackQuery.From.ID)
+
+	logger := log.
+		With().
+		Uint("userID", userID).
+		Logger()
+
+	logger.Debug().Msg("Handling weekend plan generation")
+
+	h.generatePlan(ctx, bot, update, user)
+}
+
+// generatePlan generates the actual meal plan
+func (h *MealPlanHandler) generatePlan(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update, user *database.User) {
+	chatID := update.CallbackQuery.Message.Message.Chat.ID
+	userID := uint(update.CallbackQuery.From.ID)
+
+	logger := log.
+		With().
+		Uint("userID", userID).
+		Logger()
 
 	// Remove the markup button
-	if err := h.removeMarkupAndEditMessage(ctx, bot, update); err != nil {
+	if err := h.removeMarkupOrDeleteMessage(ctx, bot, update); err != nil {
 		logger.Err(err).Msg("Error removing markup")
 		return
 	}
 
 	// Get last accepted meal plan
-	lastAcceptedMealPlan, err := h.deps.DB.GetUserLastAcceptedMealPlan(userID)
+	lastAcceptedMealPlan, err := h.deps.DB.GetUserLastAcceptedMealPlan(userID, database.PlanTypeWeekdays)
 	if err != nil {
 		logger.Err(err).Msg("Error getting last accepted meal plan")
 		ErrorResponse(ctx, bot, chatID, "There was an error getting your last accepted meal plan. This has been informed.")
@@ -76,7 +132,7 @@ func (h *MealPlanHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tg
 	}
 
 	// Generate meal plan
-	plan, err := h.deps.NutritionAgent.GenerateMealPlan(ctx, user, lastAcceptedMealPlan)
+	plan, err := h.deps.NutritionAgent.GenerateMealPlan(ctx, user, lastAcceptedMealPlan, h.planType)
 	if err != nil {
 		logger.Err(err).Msg("Error generating meal plan")
 		ErrorResponse(ctx, bot, chatID, "There was an error generating the meal plan. This has been informed.")
@@ -133,7 +189,8 @@ func (h *MealPlanHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tg
 		})
 	}
 
-	if err := h.deps.DB.SaveUserMealPlan(userID, msg.ID, userMealPlanInput); err != nil {
+	err = h.deps.DB.SaveUserMealPlan(userID, msg.ID, h.planType, userMealPlanInput)
+	if err != nil {
 		logger.Err(err).
 			Int("messageID", msg.ID).
 			Msg("Error saving user meal plan")
@@ -141,11 +198,11 @@ func (h *MealPlanHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tg
 	}
 }
 
-// removeMarkupAndEditMessage modifies or removes the message that triggered
+// removeMarkupOrDeleteMessage modifies or removes the message that triggered
 // the callback query. If the message has no media attached, it updates the
 // message text to inform the user about the ongoing plan generation process.
 // If the message contains media, it deletes the message instead.
-func (h *MealPlanHandler) removeMarkupAndEditMessage(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) error {
+func (h *MealPlanHandler) removeMarkupOrDeleteMessage(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) error {
 	chatID := update.CallbackQuery.Message.Message.Chat.ID
 	messageID := update.CallbackQuery.Message.Message.ID
 
@@ -160,7 +217,7 @@ func (h *MealPlanHandler) removeMarkupAndEditMessage(ctx context.Context, bot *t
 		_, err := bot.EditMessageText(ctx, &tgbot.EditMessageTextParams{
 			ChatID:    chatID,
 			MessageID: messageID,
-			Text:      "I'm generating a plan for you now. This can take a moment.",
+			Text:      "I'm generating a plan for you. This can take a minute.",
 		})
 
 		return err

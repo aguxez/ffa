@@ -6,6 +6,13 @@ import (
 	"gorm.io/gorm"
 )
 
+type PlanType string
+
+const (
+	PlanTypeWeekdays PlanType = "weekdays"
+	PlanTypeWeekends PlanType = "weekends"
+)
+
 type User struct {
 	gorm.Model
 
@@ -58,9 +65,10 @@ type UserMealPlan struct {
 	MessageID int                `gorm:"not null"`
 	Foods     []UserMealPlanFood `gorm:"foreignKey:UserMealPlanID"`
 
-	IsBreakfastLiked bool `gorm:"not null;default:false"`
-	IsLunchLiked     bool `gorm:"not null;default:false"`
-	IsDinnerLiked    bool `gorm:"not null;default:false"`
+	IsBreakfastLiked bool     `gorm:"not null;default:false"`
+	IsLunchLiked     bool     `gorm:"not null;default:false"`
+	IsDinnerLiked    bool     `gorm:"not null;default:false"`
+	PlanType         PlanType `gorm:"type:varchar(10);not null;default:weekdays;index"`
 
 	AcceptedAt time.Time `gorm:"index;default:NULL"`
 }
