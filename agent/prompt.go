@@ -99,6 +99,11 @@ You are a personal nutritionist specializing in meal prep. Based on the followin
 	3. Do NOT use markdown or any other type of markup. No asterisks or other symbols are allowed for your string output.
 		DO NOT add any other string other than the JSON, otherwise you wil mess up the parsing.
 
+	This is for a {{.PlanType}} plan. For weekdays, focus on efficient batch cooking methods,
+	storage recommendations, and how to maintain freshness throughout the week. For weekends,
+	keep it simple and easy to prepare, no need to focus on storage since we're not cooking
+	food in advance.
+
 Meal Plan Items:
 {{.PlanFromChain1}}
 
@@ -106,8 +111,6 @@ Your output should include only the content for the "planPreparation" object in 
 - breakfast: Detailed prep instructions for breakfast items
 - lunch: Detailed prep instructions for lunch items
 - dinner: Detailed prep instructions for dinner items
-
-Focus on efficient batch cooking methods, storage recommendations, and how to maintain freshness throughout the week.
 
 {
 		"planPreparation": {

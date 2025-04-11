@@ -59,7 +59,7 @@ func (n *NutritionAgent) GenerateMealPlan(ctx context.Context,
 	}
 
 	// Then ask for a meal plan preparation
-	preparationResponse, err := n.generateMealPlanPreparationFromLLM(ctx, mealResponse)
+	preparationResponse, err := n.generateMealPlanPreparationFromLLM(ctx, mealResponse, planType)
 	if err != nil {
 		return models.CompleteMealPlan{}, err
 	}
@@ -200,12 +200,17 @@ func (n *NutritionAgent) generateMealPlanExplanationFromLLM(ctx context.Context,
 	return ParseJSONFromResponse[models.MealPlanExplanation](output)
 }
 
-func (n *NutritionAgent) generateMealPlanPreparationFromLLM(ctx context.Context, mealPlan models.MealPlan) (models.MealPlanPreparation, error) {
+// generateMealPlanPreparationFromLLM generates comprehensive preparation steps for a given meal plan.
+func (n *NutritionAgent) generateMealPlanPreparationFromLLM(ctx context.Context,
+	mealPlan models.MealPlan,
+	planType database.PlanType,
+) (models.MealPlanPreparation, error) {
 	log.Debug().Msg("Generating meal plan preparation from LLM")
 
 	promptTemplate := prompts.NewPromptTemplate(NewMealPlanPreparationTemplate(), []string{"PlanFromChain1"})
 	promptInput := map[string]any{
 		"PlanFromChain1": mealPlan.Plan,
+		"PlanType":       planType,
 	}
 
 	prompt, err := promptTemplate.Format(promptInput)
