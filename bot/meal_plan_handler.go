@@ -2,11 +2,13 @@ package bot
 
 import (
 	"context"
+	"errors"
 
 	"github.com/aguxez/ffa/database"
 	tgbot "github.com/go-telegram/bot"
 	tgmodels "github.com/go-telegram/bot/models"
 	"github.com/rs/zerolog/log"
+	"gorm.io/gorm"
 )
 
 // MealPlanHandler handles meal plan creation
@@ -125,7 +127,7 @@ func (h *MealPlanHandler) generatePlan(ctx context.Context, bot *tgbot.Bot, upda
 
 	// Get last accepted meal plan
 	lastAcceptedMealPlan, err := h.deps.DB.GetUserLastAcceptedMealPlan(userID, database.PlanTypeWeekdays)
-	if err != nil {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		logger.Err(err).Msg("Error getting last accepted meal plan")
 		ErrorResponse(ctx, bot, chatID, "There was an error getting your last accepted meal plan. This has been informed.")
 		return
