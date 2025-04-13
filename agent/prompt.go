@@ -28,9 +28,9 @@ func NewMealPlanPromptTemplate() string {
 	5. Take dietary restrictions into consideration. Only offer foods that respect them.
 	6. Generate a maximum of two foods per category.
 
-	This is a {{.PlanType}} plan. Try to be adventureous with your guesstions. However, for weekdays, keep in mind
-	food needs to be cooked in advance. For weekends this is not a necessary since it's only Saturday and Sunday.
-	Food can be cooked the same days and variety is favored over the weekdays benefits to have a break from routine.
+	This is a {{.PlanType}} plan. Try to be adventureous with your guesstions. Whenever the plan is for weekdays, keep in mind
+	food needs to be cooked in advance. Whenever the plan is for weekends, this is not a necessary since it's only Saturday
+	and Sunday. Food can be cooked the same days and variety is favored over the weekdays benefits to have a break from routine.
 
 	For weekends, try to be a bit more adventurous with the
 	food to accomodate a break from routine from weekdays.
