@@ -280,7 +280,9 @@ func (deps *HandlerDependencies) EnsurePremium(next tgbot.HandlerFunc, handlerWi
 	return func(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) {
 		userID := uint(0)
 		chatID := int64(0)
-		var userLang database.UserLanguage = database.UserLanguageEnglish
+
+		var userLang database.UserLanguage
+		userLang = database.UserLanguageEnglish
 
 		// Determine userID, chatID, and attempt to get user language
 		if update.Message != nil {

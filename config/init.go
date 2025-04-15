@@ -2,7 +2,6 @@ package config
 
 import (
 	"github.com/joho/godotenv"
-	_ "github.com/joho/godotenv"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )
@@ -41,11 +40,32 @@ func NewAppConfig() (AppConfig, error) {
 		}
 	}
 
-	v.BindEnv("environment")
-	v.BindEnv("database_url")
-	v.BindEnv("telegram_bot_api_key")
-	v.BindEnv("openrouter_api_key")
-	v.BindEnv("meal_plan_feedback_request_minutes")
+	err = v.BindEnv("environment")
+	if err != nil {
+		log.Err(err).Msg("Error binding environment variable")
+		return AppConfig{}, err
+	}
+	err = v.BindEnv("database_url")
+	if err != nil {
+		log.Err(err).Msg("Error binding database_url variable")
+		return AppConfig{}, err
+	}
+	err = v.BindEnv("telegram_bot_api_key")
+	if err != nil {
+		log.Err(err).Msg("Error binding telegram_bot_api_key variable")
+		return AppConfig{}, err
+	}
+
+	err = v.BindEnv("openrouter_api_key")
+	if err != nil {
+		log.Err(err).Msg("Error binding openrouter_api_key variable")
+		return AppConfig{}, err
+	}
+	err = v.BindEnv("meal_plan_feedback_request_minutes")
+	if err != nil {
+		log.Err(err).Msg("Error binding meal_plan_feedback_request_minutes variable")
+		return AppConfig{}, err
+	}
 
 	// Unmarshal to struct
 	var config AppConfig

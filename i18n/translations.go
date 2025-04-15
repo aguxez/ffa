@@ -75,6 +75,7 @@ const (
 	KeyMealPlanDocumentSnack          = "meal_plan_document_snack"
 	KeyMealPlanDocumentPreparation    = "meal_plan_document_preparation"
 	KeyMealPlanDocumentShoppingList   = "meal_plan_document_shopping_list"
+	KeyMealPlanChangeLanguage         = "meal_plan_change_language"
 )
 
 var translations = map[string]map[database.UserLanguage]string{
@@ -357,6 +358,10 @@ Obtén un límite mayor de planes de comidas por semana y seguimientos programad
 	KeyMealPlanDocumentShoppingList: {
 		database.UserLanguageEnglish: "Shopping List",
 		database.UserLanguageSpanish: "Lista de compras",
+	},
+	KeyMealPlanChangeLanguage: {
+		database.UserLanguageEnglish: "Change language",
+		database.UserLanguageSpanish: "Cambiar idioma",
 	},
 }
 

@@ -112,7 +112,7 @@ func (n *NutritionAgent) generateMealPlanFromLLM(ctx context.Context,
 	// Append user's body weight if set
 	var weightStr string
 	if user.Weight != nil {
-		weightStr += fmt.Sprintf("Body Weight (kg): %d\n", *user.Weight)
+		weightStr += fmt.Sprintf("Body Weight (kg): %b\n", *user.Weight)
 	}
 
 	// Append the number of days the plan should be for
@@ -137,9 +137,9 @@ func (n *NutritionAgent) generateMealPlanFromLLM(ctx context.Context,
 			previousPlanInput.WriteString(fmt.Sprintf("- %s (category: %s)\n", meal.Name, meal.Category))
 		}
 
-		previousPlanInput.WriteString(fmt.Sprintf("Was breakfast liked: %b\n", lastMealPlan.IsBreakfastLiked))
-		previousPlanInput.WriteString(fmt.Sprintf("Was lunch liked: %b\n", lastMealPlan.IsLunchLiked))
-		previousPlanInput.WriteString(fmt.Sprintf("Was dinner liked: %b\n", lastMealPlan.IsDinnerLiked))
+		previousPlanInput.WriteString(fmt.Sprintf("Was breakfast liked: %t\n", lastMealPlan.IsBreakfastLiked))
+		previousPlanInput.WriteString(fmt.Sprintf("Was lunch liked: %t\n", lastMealPlan.IsLunchLiked))
+		previousPlanInput.WriteString(fmt.Sprintf("Was dinner liked: %t\n", lastMealPlan.IsDinnerLiked))
 	}
 
 	promptTemplate := prompts.NewPromptTemplate(NewMealPlanPromptTemplate(), []string{"CombinedInput"})

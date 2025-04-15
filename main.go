@@ -41,7 +41,12 @@ func main() {
 
 	// Setup the cron
 	c := cron.New()
-	c.AddFunc(getCronTime(cfg), func() { scheduler.Run() })
+	err = c.AddFunc(getCronTime(cfg), func() { scheduler.Run() })
+	if err != nil {
+		log.Err(err).Msg("Error adding cron job")
+		return
+	}
+
 	c.Start()
 
 	// Start the bot and block main thread

@@ -8,6 +8,7 @@ import (
 	"github.com/aguxez/ffa/models"
 	tgbot "github.com/go-telegram/bot"
 	tgmodels "github.com/go-telegram/bot/models"
+	"github.com/rs/zerolog/log"
 )
 
 // CallbackData defines type-safe callback data values
@@ -104,8 +105,12 @@ func (r *HandlerRegistry) Get(key string) Handler {
 // ErrorResponse sends an error response to the user.
 // The msg parameter should be the already translated error message.
 func ErrorResponse(ctx context.Context, bot *tgbot.Bot, chatID int64, translatedMsg string) {
-	bot.SendMessage(ctx, &tgbot.SendMessageParams{
+	_, err := bot.SendMessage(ctx, &tgbot.SendMessageParams{
 		ChatID: chatID,
 		Text:   translatedMsg,
 	})
+
+	if err != nil {
+		log.Err(err).Int64("chatID", chatID).Msg("Error sending error response")
+	}
 }

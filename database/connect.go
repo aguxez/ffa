@@ -27,7 +27,7 @@ func NewDatabase(cfg config.AppConfig) (*Database, error) {
 	}
 
 	log.Info().Msg("Connected to database. Checking if we need to run migrations...")
-	db.AutoMigrate(
+	err = db.AutoMigrate(
 		&User{},
 		&UserFood{},
 		&UserPlanSchedule{},
@@ -36,6 +36,10 @@ func NewDatabase(cfg config.AppConfig) (*Database, error) {
 		&UserMealPlanFood{},
 		&UserPayment{},
 	)
+
+	if err != nil {
+		return &Database{}, err
+	}
 
 	return &Database{Conn: db, Config: cfg}, nil
 }

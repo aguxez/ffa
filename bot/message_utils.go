@@ -61,6 +61,12 @@ func InitialMenuMessageParams(chatID int64, user *database.User, numberOfCreated
 					CallbackData: string(CallbackDataCreateWeekendPlan),
 				},
 			},
+			{
+				{
+					Text:         i18n.GetText(i18n.KeyMealPlanChangeLanguage, userLang),
+					CallbackData: string(CallbackDataCreateWeekendPlan),
+				},
+			},
 		}
 	} else {
 		buttons = [][]tgmodels.InlineKeyboardButton{
