@@ -3,6 +3,7 @@ package bot
 import (
 	"context"
 
+	"github.com/aguxez/ffa/i18n" // Import i18n
 	tgbot "github.com/go-telegram/bot"
 	tgmodels "github.com/go-telegram/bot/models"
 	"github.com/rs/zerolog/log"
@@ -49,35 +50,43 @@ func (h *PaymentHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tgm
 
 // handleInitialPaymentRequest handles the initial payment request
 func (h *PaymentHandler) handleInitialPaymentRequest(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) {
-	userID := update.CallbackQuery.From.ID
+	userID := uint(update.CallbackQuery.From.ID)
+	chatID := update.CallbackQuery.Message.Message.Chat.ID
+
 	logger := log.
 		With().
-		Int64("userID", userID).
+		Uint("userID", userID).
 		Logger()
 
+	// Get user language
+	user, err := h.deps.DB.GetUser(userID)
+	if err != nil {
+		logger.Err(err).Msg("Error getting user")
+		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorResponseGeneric, "en"))
+		return
+	}
+	userLang := user.Language
+
 	// Send invoice
-	_, err := bot.SendInvoice(ctx, &tgbot.SendInvoiceParams{
-		ChatID: userID,
-		Title:  "RawPlan Premium",
+	_, err = bot.SendInvoice(ctx, &tgbot.SendInvoiceParams{
+		ChatID: update.CallbackQuery.From.ID,
+		Title:  i18n.GetText(i18n.KeyInvoiceTitle, userLang),
 		// We set the payload as an empty string because we do not have various products
 		// so the purchase will be for a single item and we do not need metadata
 		// for this as of now.
-		Payload: "premium-purchase",
-		Description: `
-Access to all features of RawPlan and future developments.
-Get a higher limit number of meal plans per week and timed follow-ups.
-This is a non-recurring subscription to get all features of the product!
-`,
-		Currency: "XTR",
+		Payload:     "premium-purchase",
+		Description: i18n.GetText(i18n.KeyInvoiceDescription, userLang),
+		Currency:    "XTR",
 		Prices: []tgmodels.LabeledPrice{
 			{
-				Label:  "Premium test",
+				Label:  i18n.GetText(i18n.KeyInvoicePriceLabel, userLang),
 				Amount: PREMIUM_PRICE_XTR,
 			},
 		},
 	})
 	if err != nil {
 		logger.Err(err).Msg("Error sending invoice")
+		return
 	}
 }
 
@@ -98,8 +107,8 @@ func (h *PaymentHandler) handlePreCheckoutQuery(ctx context.Context, bot *tgbot.
 
 // handleSuccessfulPayment handles the successful payment
 func (h *PaymentHandler) handleSuccessfulPayment(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) {
-	// Update user status
 	userID := uint(update.Message.From.ID)
+	chatID := update.Message.Chat.ID
 	paymentID := update.Message.SuccessfulPayment.TelegramPaymentChargeID
 
 	logger := log.
@@ -108,29 +117,39 @@ func (h *PaymentHandler) handleSuccessfulPayment(ctx context.Context, bot *tgbot
 		Str("paymentID", paymentID).
 		Logger()
 
-	err := h.deps.DB.UpdateUserPremiumStatus(userID, true, &paymentID)
+	// Get user language first. If this fails, we cannot proceed safely.
+	user, err := h.deps.DB.GetUser(userID)
 	if err != nil {
-		logger.Err(err).Msg("Error updating user status")
-
+		// Log the error and inform the user (using English as fallback)
+		logger.Err(err).Msg("Critical: Error getting user after successful payment. Cannot update premium status.")
 		bot.SendMessage(ctx, &tgbot.SendMessageParams{
-			ChatID: userID,
-			Text: `
-There was an error processing your successful payment. This has been informed.
-`,
+			ChatID: chatID,
+			Text:   i18n.GetText(i18n.KeyErrorPaymentProcessing, "en"),
+		})
+		return
+	}
+	userLang := user.Language
+
+	// Now attempt to update user status
+	err = h.deps.DB.UpdateUserPremiumStatus(userID, true, &paymentID)
+	if err != nil {
+		logger.Err(err).Msg("Error updating user premium status after successful payment")
+		bot.SendMessage(ctx, &tgbot.SendMessageParams{
+			ChatID: chatID,
+			Text:   i18n.GetText(i18n.KeyErrorPaymentProcessing, userLang),
 		})
 		return
 	}
 
+	// Send translated success message
 	bot.SendMessage(ctx, &tgbot.SendMessageParams{
-		ChatID: update.Message.Chat.ID,
-		Text: `
-You have successfully upgraded to RawPlan Premium!
-`,
+		ChatID: chatID,
+		Text:   i18n.GetText(i18n.KeyPaymentSuccess, userLang),
 		ReplyMarkup: &tgmodels.InlineKeyboardMarkup{
 			InlineKeyboard: [][]tgmodels.InlineKeyboardButton{
 				{
 					{
-						Text:         "↼ Back to options",
+						Text:         i18n.GetText(i18n.KeyBackToOptionsButton, userLang),
 						CallbackData: string(CallbackDataBackToOptions),
 					},
 				},

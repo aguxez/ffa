@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"fmt"
 	"strings"
+	"text/template"
 
 	"github.com/Dadido3/go-typst"
+	"github.com/aguxez/ffa/database"
+	"github.com/aguxez/ffa/i18n"
 	"github.com/aguxez/ffa/models"
 	"github.com/rs/zerolog/log"
 )
@@ -15,7 +18,7 @@ import (
 // It takes the meal plan response and creates a Typst document with a table for each
 // meal category (breakfast, lunch, dinner, snack) and a section for the preparation
 // instructions. We use Typst so we can easily export to PDF and send it to chats.
-func GenerateDocFromMealPlan(mealPlan models.CompleteMealPlan) (bytes.Buffer, error) {
+func GenerateDocFromMealPlan(mealPlan models.CompleteMealPlan, userLanguage database.UserLanguage) (bytes.Buffer, error) {
 	planByCategory := make(map[string]string)
 	for _, food := range mealPlan.Plan {
 		formattedItem := fmt.Sprintf(
@@ -55,7 +58,7 @@ func GenerateDocFromMealPlan(mealPlan models.CompleteMealPlan) (bytes.Buffer, er
 
 	// Use a consistent color for all food groups
 	getFoodGroupColor := func(index int) string {
-		// Array of _pleasant_ colors for food groups
+		// Array of *pleasant* colors for food groups
 		colors := []string{
 			"#065f46", // Green
 			"#9f1239", // Red
@@ -84,7 +87,6 @@ func GenerateDocFromMealPlan(mealPlan models.CompleteMealPlan) (bytes.Buffer, er
 			shoppingListContent.WriteString(fmt.Sprintf(`
 								- %s`, food))
 		}
-
 		shoppingListContent.WriteString(`
 							],`)
 	}
@@ -97,8 +99,8 @@ func GenerateDocFromMealPlan(mealPlan models.CompleteMealPlan) (bytes.Buffer, er
 			]
 		)`)
 
-	r := bytes.NewBufferString(fmt.Sprintf(
-		`
+	// Define the template content
+	tmplContent := `
 		#set text(font: "Inter")
 		#grid(
 			columns: (auto, auto),
@@ -107,69 +109,110 @@ func GenerateDocFromMealPlan(mealPlan models.CompleteMealPlan) (bytes.Buffer, er
 			[= Meal Plan],
 			[#image("assets/bot-logo.svg", height: 1.2em)]
 		)
-		%s
-		== Breakfast
+		{{.PlanExplanation}}
+		== {{.BreakfastTitle}}
 		#table(
 			columns: (auto, auto, auto),
 			align: horizon,
 			table.header(
 				[*Food*], [*Macros*], [*Explanation*]
 			),
-			%s
+			{{.Breakfast}}
 		)
-		== Lunch
+		== {{.LunchTitle}}
 		#table(
 			columns: (auto, auto, auto),
 			align: horizon,
 			table.header(
 				[*Food*], [*Macros*], [*Explanation*]
 			),
-			%s
+			{{.Lunch}}
 		)
-		== Dinner
+		== {{.DinnerTitle}}
 		#table(
 			columns: (auto, auto, auto),
 			align: horizon,
 			table.header(
 				[*Food*], [*Macros*], [*Explanation*]
 			),
-			%s
+			{{.Dinner}}
 		)
-		== Snack
+		== {{.SnackTitle}}
 		#table(
 			columns: (auto, auto, auto),
 			align: horizon,
 			table.header(
 				[*Food*], [*Macros*], [*Explanation*]
 			),
-			%s
+			{{.Snack}}
 		)
-		== Preparation
-		=== Breakfast
-		%s
-		=== Lunch
-		%s
-		=== Dinner
-		%s
-		== Shopping List
-		%s
-		`,
-		mealPlan.PlanExplanation,
-		planByCategory["breakfast"],
-		planByCategory["lunch"],
-		planByCategory["dinner"],
-		planByCategory["snack"],
-		mealPlan.PlanPreparation.Breakfast,
-		mealPlan.PlanPreparation.Lunch,
-		mealPlan.PlanPreparation.Dinner,
-		shoppingListContent.String(),
-	))
+    == {{.PreparationTitle}}
+    === {{.BreakfastTitle}}
+		{{.BreakfastPrep}}
+		=== {{.LunchTitle}}
+		{{.LunchPrep}}
+		=== {{.DinnerTitle}}
+		{{.DinnerPrep}}
+		== {{.ShoppingListTitle}}
+		{{.ShoppingList}}
+	`
+
+	// Create and parse the template
+	tmpl, err := template.New("mealplan").Parse(tmplContent)
+	if err != nil {
+		log.Err(err).Msg("Failed to parse template")
+		return bytes.Buffer{}, err
+	}
+
+	// Define the data to populate the template
+	data := struct {
+		PlanExplanation   string
+		Breakfast         string
+		Lunch             string
+		Dinner            string
+		Snack             string
+		BreakfastPrep     string
+		LunchPrep         string
+		DinnerPrep        string
+		ShoppingList      string
+		BreakfastTitle    string
+		LunchTitle        string
+		DinnerTitle       string
+		SnackTitle        string
+		PreparationTitle  string
+		ShoppingListTitle string
+	}{
+		PlanExplanation:   mealPlan.PlanExplanation,
+		Breakfast:         planByCategory["breakfast"],
+		Lunch:             planByCategory["lunch"],
+		Dinner:            planByCategory["dinner"],
+		Snack:             planByCategory["snack"],
+		BreakfastPrep:     mealPlan.PlanPreparation.Breakfast,
+		LunchPrep:         mealPlan.PlanPreparation.Lunch,
+		DinnerPrep:        mealPlan.PlanPreparation.Dinner,
+		ShoppingList:      shoppingListContent.String(),
+		BreakfastTitle:    i18n.GetText(i18n.KeyMealPlanDocumentBreakfast, userLanguage),
+		LunchTitle:        i18n.GetText(i18n.KeyMealPlanDocumentLunch, userLanguage),
+		DinnerTitle:       i18n.GetText(i18n.KeyMealPlanDocumentDinner, userLanguage),
+		SnackTitle:        i18n.GetText(i18n.KeyMealPlanDocumentSnack, userLanguage),
+		PreparationTitle:  i18n.GetText(i18n.KeyMealPlanDocumentPreparation, userLanguage),
+		ShoppingListTitle: i18n.GetText(i18n.KeyMealPlanDocumentShoppingList, userLanguage),
+	}
+
+	// Execute the template and write it to a buffer
+	var documentBuffer bytes.Buffer
+	if err := tmpl.Execute(&documentBuffer, data); err != nil {
+		log.Err(err).Msg("Failed to execute template")
+		return bytes.Buffer{}, err
+	}
+
 	typstCLI := typst.CLI{}
 	// Create a buffer to hold the file state in memory
 	var buf bytes.Buffer
-	if err := typstCLI.Compile(r, &buf, nil); err != nil {
+	if err := typstCLI.Compile(&documentBuffer, &buf, nil); err != nil {
 		log.Err(err).Msg("Failed to compile document")
 		return bytes.Buffer{}, err
 	}
+
 	return buf, nil
 }

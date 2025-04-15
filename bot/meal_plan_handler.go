@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/aguxez/ffa/database"
+	"github.com/aguxez/ffa/i18n"
 	tgbot "github.com/go-telegram/bot"
 	tgmodels "github.com/go-telegram/bot/models"
 	"github.com/rs/zerolog/log"
@@ -40,21 +41,23 @@ func (h *MealPlanHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tg
 
 	logger.Debug().Msg("Handling meal plan creation")
 
-	// Load user and associations
+	// Load user and associations (needed for language and plan generation)
 	user, err := h.deps.DB.GetUser(userID)
 	if err != nil {
-		logger.Err(err).Msg("Error getting user foods")
-		ErrorResponse(ctx, bot, chatID, "Failed to retrieve your food preferences.")
+		logger.Err(err).Msg("Error getting user")
+		// Can't get user language, default to English for error
+		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorRetrieveUserData, "en"))
 		return
 	}
+	userLang := user.Language
 
 	if h.planType == database.PlanTypeWeekdays {
-		h.handleWeekdaysPlanGeneration(ctx, bot, update, user)
+		h.handleWeekdaysPlanGeneration(ctx, bot, update, user, userLang)
 		return
 	}
 
 	if h.planType == database.PlanTypeWeekends {
-		h.handleWeekendPlanGeneration(ctx, bot, update, user)
+		h.handleWeekendPlanGeneration(ctx, bot, update, user, userLang)
 		return
 	}
 }
@@ -64,6 +67,7 @@ func (h *MealPlanHandler) handleWeekdaysPlanGeneration(ctx context.Context,
 	bot *tgbot.Bot,
 	update *tgmodels.Update,
 	user *database.User,
+	userLang database.UserLanguage,
 ) {
 	chatID := update.CallbackQuery.Message.Message.Chat.ID
 	userID := uint(update.CallbackQuery.From.ID)
@@ -79,16 +83,16 @@ func (h *MealPlanHandler) handleWeekdaysPlanGeneration(ctx context.Context,
 	numberOfPlansCreated, err := h.deps.DB.GetCountOfUserPlans(user.ID)
 	if err != nil {
 		logger.Err(err).Msg("Error getting count of user plans")
-		ErrorResponse(ctx, bot, chatID, "Failed to retrieve user data.")
+		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorRetrieveUserData, userLang))
 		return
 	}
 	if numberOfPlansCreated >= MAX_FREE_USERS_PLANS && !user.IsPremium {
 		logger.Debug().Msg("User has reached the maximum number of meal plans")
-		ErrorResponse(ctx, bot, chatID, "You have reached the maximum number of meal plans. You can upgrade to enjoy all features!")
+		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyMaxPlansReached, userLang))
 		return
 	}
 
-	h.generatePlan(ctx, bot, update, user)
+	h.generatePlan(ctx, bot, update, user, userLang)
 }
 
 // handleWeekendPlanGeneration generates a meal plan for weekends
@@ -96,6 +100,7 @@ func (h *MealPlanHandler) handleWeekendPlanGeneration(ctx context.Context,
 	bot *tgbot.Bot,
 	update *tgmodels.Update,
 	user *database.User,
+	userLang database.UserLanguage,
 ) {
 	userID := uint(update.CallbackQuery.From.ID)
 
@@ -106,11 +111,11 @@ func (h *MealPlanHandler) handleWeekendPlanGeneration(ctx context.Context,
 
 	logger.Debug().Msg("Handling weekend plan generation")
 
-	h.generatePlan(ctx, bot, update, user)
+	h.generatePlan(ctx, bot, update, user, userLang)
 }
 
 // generatePlan generates the actual meal plan
-func (h *MealPlanHandler) generatePlan(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update, user *database.User) {
+func (h *MealPlanHandler) generatePlan(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update, user *database.User, userLang database.UserLanguage) {
 	chatID := update.CallbackQuery.Message.Message.Chat.ID
 	userID := uint(update.CallbackQuery.From.ID)
 
@@ -120,8 +125,9 @@ func (h *MealPlanHandler) generatePlan(ctx context.Context, bot *tgbot.Bot, upda
 		Logger()
 
 	// Remove the markup button
-	if err := h.removeMarkupOrDeleteMessage(ctx, bot, update); err != nil {
+	if err := h.removeMarkupOrDeleteMessage(ctx, bot, update, userLang); err != nil { // Pass language
 		logger.Err(err).Msg("Error removing markup")
+		// Don't send error response here, as message might be deleted or already edited
 		return
 	}
 
@@ -129,7 +135,7 @@ func (h *MealPlanHandler) generatePlan(ctx context.Context, bot *tgbot.Bot, upda
 	lastAcceptedMealPlan, err := h.deps.DB.GetUserLastAcceptedMealPlan(userID, database.PlanTypeWeekdays)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		logger.Err(err).Msg("Error getting last accepted meal plan")
-		ErrorResponse(ctx, bot, chatID, "There was an error getting your last accepted meal plan. This has been informed.")
+		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorGetLastPlan, userLang))
 		return
 	}
 
@@ -137,17 +143,17 @@ func (h *MealPlanHandler) generatePlan(ctx context.Context, bot *tgbot.Bot, upda
 	plan, err := h.deps.NutritionAgent.GenerateMealPlan(ctx, user, lastAcceptedMealPlan, h.planType)
 	if err != nil {
 		logger.Err(err).Msg("Error generating meal plan")
-		ErrorResponse(ctx, bot, chatID, "There was an error generating the meal plan. This has been informed.")
+		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorGeneratePlan, userLang))
 		return
 	}
 
 	logger.Debug().Msg("Created meal plan")
 
 	// Generate PDF
-	doc, err := GenerateDocFromMealPlan(plan)
+	doc, err := GenerateDocFromMealPlan(plan, user.Language)
 	if err != nil {
 		logger.Err(err).Msg("Error generating document")
-		ErrorResponse(ctx, bot, chatID, "There was an error generating your document. This has been informed.")
+		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorGenerateDoc, userLang))
 		return
 	}
 
@@ -156,7 +162,7 @@ func (h *MealPlanHandler) generatePlan(ctx context.Context, bot *tgbot.Bot, upda
 	// Send document
 	msg, err := bot.SendDocument(ctx, &tgbot.SendDocumentParams{
 		ChatID:  chatID,
-		Caption: "Here is our recommended meal plan based on the schedule and information you have shared with us!",
+		Caption: i18n.GetText(i18n.KeyPlanCaption, userLang),
 		Document: &tgmodels.InputFileUpload{
 			Filename: "personalized_meal_plan.pdf",
 			Data:     &doc,
@@ -165,11 +171,11 @@ func (h *MealPlanHandler) generatePlan(ctx context.Context, bot *tgbot.Bot, upda
 			InlineKeyboard: [][]tgmodels.InlineKeyboardButton{
 				{
 					{
-						Text:         "Accept ✅",
+						Text:         i18n.GetText(i18n.KeyAcceptButton, userLang),
 						CallbackData: string(CallBackDataAcceptPlan),
 					},
 					{
-						Text:         "Reject ❌",
+						Text:         i18n.GetText(i18n.KeyRejectButton, userLang),
 						CallbackData: string(CallbackDataRejectPlan),
 					},
 				},
@@ -178,7 +184,7 @@ func (h *MealPlanHandler) generatePlan(ctx context.Context, bot *tgbot.Bot, upda
 	})
 	if err != nil {
 		logger.Err(err).Msg("Error sending document")
-		ErrorResponse(ctx, bot, chatID, "There was an error sending your document. This has been informed.")
+		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorSendDoc, userLang))
 		return
 	}
 
@@ -204,7 +210,7 @@ func (h *MealPlanHandler) generatePlan(ctx context.Context, bot *tgbot.Bot, upda
 // the callback query. If the message has no media attached, it updates the
 // message text to inform the user about the ongoing plan generation process.
 // If the message contains media, it deletes the message instead.
-func (h *MealPlanHandler) removeMarkupOrDeleteMessage(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) error {
+func (h *MealPlanHandler) removeMarkupOrDeleteMessage(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update, userLang database.UserLanguage) error { // Add language
 	chatID := update.CallbackQuery.Message.Message.Chat.ID
 	messageID := update.CallbackQuery.Message.Message.ID
 
@@ -219,7 +225,7 @@ func (h *MealPlanHandler) removeMarkupOrDeleteMessage(ctx context.Context, bot *
 		_, err := bot.EditMessageText(ctx, &tgbot.EditMessageTextParams{
 			ChatID:    chatID,
 			MessageID: messageID,
-			Text:      "I'm generating a plan for you. This can take a minute.",
+			Text:      i18n.GetText(i18n.KeyGeneratingPlan, userLang),
 		})
 
 		return err

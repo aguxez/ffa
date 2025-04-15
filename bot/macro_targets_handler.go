@@ -3,6 +3,7 @@ package bot
 import (
 	"context"
 
+	"github.com/aguxez/ffa/i18n"
 	"github.com/aguxez/ffa/models"
 	tgbot "github.com/go-telegram/bot"
 	tgmodels "github.com/go-telegram/bot/models"
@@ -23,24 +24,34 @@ func NewMacroTargetsHandler(deps *HandlerDependencies) *MacroTargetsHandler {
 
 // Handle handles the macro targets button.
 func (h *MacroTargetsHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) {
-	log.Debug().Str("handler", "MacroTargetsHandler").Msg("Handling macro targets button")
+	userID := uint(update.CallbackQuery.From.ID)
+	chatID := update.CallbackQuery.Message.Message.Chat.ID
+	messageID := update.CallbackQuery.Message.Message.ID
+
+	logger := log.With().Uint("userID", userID).Str("handler", "MacroTargetsHandler").Logger()
+	logger.Debug().Msg("Handling macro targets button")
+
+	// Get user language
+	user, err := h.deps.DB.GetUser(userID)
+	if err != nil {
+		logger.Err(err).Msg("Error getting user")
+		// Send generic error in default language (English) as we couldn't fetch user lang
+		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorResponseGeneric, "en"))
+		return
+	}
+	userLang := user.Language
 
 	// Update user state
-	h.deps.StateManager.SetUserState(uint(update.CallbackQuery.From.ID), models.ConversationStageAddMacroTargets)
+	h.deps.StateManager.SetUserState(userID, models.ConversationStageAddMacroTargets)
 
 	// Edit the callback text
-	_, err := bot.EditMessageText(ctx, &tgbot.EditMessageTextParams{
-		ChatID:    update.CallbackQuery.Message.Message.Chat.ID,
-		MessageID: update.CallbackQuery.Message.Message.ID,
-		Text: `Enter your macro targets in any format:
-- carbs: 300g, protein: 150g, fat: 50g
-- calories: 2500
-
-You can specify just some macros (e.g., only calories). All plans will include estimates for all nutritional values.
-`,
+	_, err = bot.EditMessageText(ctx, &tgbot.EditMessageTextParams{
+		ChatID:    chatID,
+		MessageID: messageID,
+		Text:      i18n.GetText(i18n.KeyMacroTargetsPrompt, userLang),
 	})
 	if err != nil {
-		log.Err(err).Msg("Error sending macro targets message")
+		logger.Err(err).Msg("Error sending macro targets message")
 		return
 	}
 }
@@ -59,34 +70,49 @@ func NewMacroTargetsMessageHandler(deps *HandlerDependencies) *MacroTargetsMessa
 
 // Handle handles the macro targets message after the callback
 func (h *MacroTargetsMessageHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) {
-	log.Debug().Str("handler", "MacroTargetsMessageHandler").Msg("Handling macro targets message")
+	userID := uint(update.Message.From.ID)
+	chatID := update.Message.Chat.ID
+
+	logger := log.With().Uint("userID", userID).Str("handler", "MacroTargetsMessageHandler").Logger()
+	logger.Debug().Msg("Handling macro targets message")
+
+	// Get user language
+	user, err := h.deps.DB.GetUser(userID)
+	if err != nil {
+		logger.Err(err).Msg("Error getting user")
+		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorResponseGeneric, "en"))
+		return
+	}
+	userLang := user.Language
 
 	// Update user's state to the beginning
-	h.deps.StateManager.SetUserState(uint(update.Message.From.ID), models.ConversationStageNull)
+	h.deps.StateManager.SetUserState(userID, models.ConversationStageNull)
 
 	// Parse the message received by the user
 	macroTargets, err := h.deps.NaturalLanguageAgent.ParseMacroTargetsMessage(ctx, update.Message.Text)
 	if err != nil {
-		log.Err(err).Msg("Error parsing macro targets message")
+		logger.Err(err).Msg("Error parsing macro targets message")
+		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorResponseGeneric, userLang)) // Consider a more specific key if needed
 		return
 	}
 
 	// Update user's macro targets
-	err = h.deps.DB.UpdateUserMacros(uint(update.Message.From.ID), macroTargets)
+	err = h.deps.DB.UpdateUserMacros(userID, macroTargets)
 	if err != nil {
-		log.Err(err).Msg("Error updating user's macro targets")
+		logger.Err(err).Msg("Error updating user's macro targets")
+		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorResponseGeneric, userLang))
 		return
 	}
 
 	// Send message informing about the update
 	_, err = bot.SendMessage(ctx, &tgbot.SendMessageParams{
-		ChatID: update.Message.Chat.ID,
-		Text:   "Amazing. Your macro targets have been updated!",
+		ChatID: chatID,
+		Text:   i18n.GetText(i18n.KeyMacroTargetsUpdated, userLang),
 		ReplyMarkup: &tgmodels.InlineKeyboardMarkup{
 			InlineKeyboard: [][]tgmodels.InlineKeyboardButton{
 				{
 					{
-						Text:         "↼ Back to options",
+						Text:         i18n.GetText(i18n.KeyBackToOptionsButton, userLang),
 						CallbackData: string(CallbackDataBackToOptions),
 					},
 				},
@@ -94,7 +120,8 @@ func (h *MacroTargetsMessageHandler) Handle(ctx context.Context, bot *tgbot.Bot,
 		},
 	})
 	if err != nil {
-		log.Err(err).Msg("Error sending update message")
+		logger.Err(err).Msg("Error sending update message")
+		// No need to send another error message here, just log
 		return
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/aguxez/ffa/database"
+	"github.com/aguxez/ffa/i18n"
 	"github.com/aguxez/ffa/models"
 	tgbot "github.com/go-telegram/bot"
 	tgmodels "github.com/go-telegram/bot/models"
@@ -51,7 +52,7 @@ func NewMealPlanFeedbackHandler(deps *HandlerDependencies) *MealPlanFeedbackHand
 			MealType:       MealTypeBreakfast,
 			CurrentStage:   models.ConversationStageMealPlanFeedbackBreakfast,
 			NextStage:      models.ConversationStageMealPlanFeedbackLunch,
-			Question:       "How do you feel about the breakfast? (1/3)",
+			Question:       i18n.KeyFeedbackBreakfastQuestion,
 			GoodCallbackID: CallbackDataMealPlanFeedbackBreakfastGood,
 			BadCallbackID:  CallbackDataMealPlanFeedbackBreakfastBad,
 		},
@@ -59,7 +60,7 @@ func NewMealPlanFeedbackHandler(deps *HandlerDependencies) *MealPlanFeedbackHand
 			MealType:       MealTypeLunch,
 			CurrentStage:   models.ConversationStageMealPlanFeedbackLunch,
 			NextStage:      models.ConversationStageMealPlanFeedbackDinner,
-			Question:       "How do you feel about the lunch? (2/3)",
+			Question:       i18n.KeyFeedbackLunchQuestion,
 			GoodCallbackID: CallbackDataMealPlanFeedbackLunchGood,
 			BadCallbackID:  CallbackDataMealPlanFeedbackLunchBad,
 		},
@@ -67,7 +68,7 @@ func NewMealPlanFeedbackHandler(deps *HandlerDependencies) *MealPlanFeedbackHand
 			MealType:       MealTypeDinner,
 			CurrentStage:   models.ConversationStageMealPlanFeedbackDinner,
 			NextStage:      models.ConversationStageNull, // End of flow
-			Question:       "How do you feel about the dinner? (3/3)",
+			Question:       i18n.KeyFeedbackDinnerQuestion,
 			GoodCallbackID: CallbackDataMealPlanFeedbackDinnerGood,
 			BadCallbackID:  CallbackDataMealPlanFeedbackDinnerBad,
 		},
@@ -87,22 +88,32 @@ func (h *MealPlanFeedbackHandler) Handle(ctx context.Context, bot *tgbot.Bot, up
 	userID := uint(update.CallbackQuery.From.ID)
 	chatID := update.CallbackQuery.Message.Message.Chat.ID
 	messageID := update.CallbackQuery.Message.Message.ID
+
+	// Query user so we can get its language first
+	user, err := h.deps.DB.GetUser(userID)
+	if err != nil {
+		logger.Err(err).Msg("Error getting user")
+		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorResponseGeneric, "en"))
+		return
+	}
+	userLang := user.Language
+
 	userState := h.deps.StateManager.GetUserState(userID)
 
 	// Handle start of feedback process
 	if update.CallbackQuery.Data == string(CallbackDataMealPlanFeedbackStart) {
-		h.startFeedbackProcess(ctx, bot, userID, chatID, messageID)
+		h.startFeedbackProcess(ctx, bot, userID, chatID, messageID, userLang)
 		return
 	}
 
 	// If no active feedback stage, start with breakfast
 	if userState.Stage == models.ConversationStageNull {
-		h.startFeedbackProcess(ctx, bot, userID, chatID, messageID)
+		h.startFeedbackProcess(ctx, bot, userID, chatID, messageID, userLang)
 		return
 	}
 
 	// Process feedback for current meal
-	h.processMealFeedback(ctx, bot, update, userID, chatID, messageID, userState.Stage)
+	h.processMealFeedback(ctx, bot, update, userID, chatID, messageID, userState.Stage, userLang)
 }
 
 // startFeedbackProcess initiates the feedback collection process
@@ -112,6 +123,7 @@ func (h *MealPlanFeedbackHandler) startFeedbackProcess(
 	userID uint,
 	chatID int64,
 	messageID int,
+	userLang database.UserLanguage,
 ) {
 	log.Debug().Msg("Starting feedback process with breakfast")
 
@@ -119,7 +131,7 @@ func (h *MealPlanFeedbackHandler) startFeedbackProcess(
 	h.deps.StateManager.SetUserState(userID, models.ConversationStageMealPlanFeedbackBreakfast)
 
 	// Send breakfast feedback question
-	h.sendFeedbackQuestion(ctx, bot, chatID, messageID, h.config[models.ConversationStageMealPlanFeedbackBreakfast])
+	h.sendFeedbackQuestion(ctx, bot, chatID, messageID, h.config[models.ConversationStageMealPlanFeedbackBreakfast], userLang)
 }
 
 // processMealFeedback handles feedback for a specific meal type
@@ -131,6 +143,7 @@ func (h *MealPlanFeedbackHandler) processMealFeedback(
 	chatID int64,
 	messageID int,
 	currentStage models.ConversationStage,
+	userLang database.UserLanguage,
 ) {
 	logger := log.With().
 		Str("handler", "MealPlanFeedbackHandler").
@@ -163,12 +176,12 @@ func (h *MealPlanFeedbackHandler) processMealFeedback(
 
 	// If this was the last meal, send completion message
 	if config.NextStage == models.ConversationStageNull {
-		h.sendCompletionMessage(ctx, bot, chatID, messageID)
+		h.sendCompletionMessage(ctx, bot, chatID, messageID, userLang)
 		return
 	}
 
 	// Send question for next meal
-	h.sendFeedbackQuestion(ctx, bot, chatID, messageID, h.config[config.NextStage])
+	h.sendFeedbackQuestion(ctx, bot, chatID, messageID, h.config[config.NextStage], userLang)
 }
 
 // saveFeedbackToDatabase stores user's meal feedback
@@ -195,20 +208,21 @@ func (h *MealPlanFeedbackHandler) sendFeedbackQuestion(
 	chatID int64,
 	messageID int,
 	config MealFeedbackConfig,
+	userLang database.UserLanguage,
 ) {
 	_, err := bot.EditMessageText(ctx, &tgbot.EditMessageTextParams{
 		ChatID:    chatID,
 		MessageID: messageID,
-		Text:      config.Question,
+		Text:      i18n.GetText(config.Question, userLang),
 		ReplyMarkup: &tgmodels.InlineKeyboardMarkup{
 			InlineKeyboard: [][]tgmodels.InlineKeyboardButton{
 				{
 					{
-						Text:         "Enjoyed❤️",
+						Text:         i18n.GetText(i18n.KeyFeedbackEnjoyedButton, userLang),
 						CallbackData: string(config.GoodCallbackID),
 					},
 					{
-						Text:         "Disliked☹️",
+						Text:         i18n.GetText(i18n.KeyFeedbackDislikedButton, userLang),
 						CallbackData: string(config.BadCallbackID),
 					},
 				},
@@ -221,15 +235,17 @@ func (h *MealPlanFeedbackHandler) sendFeedbackQuestion(
 }
 
 // sendCompletionMessage sends the final message after collecting all feedback
-func (h *MealPlanFeedbackHandler) sendCompletionMessage(ctx context.Context,
+func (h *MealPlanFeedbackHandler) sendCompletionMessage(
+	ctx context.Context,
 	bot *tgbot.Bot,
 	chatID int64,
 	messageID int,
+	userLang database.UserLanguage,
 ) {
 	_, err := bot.EditMessageText(ctx, &tgbot.EditMessageTextParams{
 		ChatID:    chatID,
 		MessageID: messageID,
-		Text:      "Thanks for your feedback. Your recommendations will be updated for your next meal plan.",
+		Text:      i18n.GetText(i18n.KeyFeedbackThanks, userLang),
 		ReplyMarkup: &tgmodels.InlineKeyboardMarkup{
 			InlineKeyboard: [][]tgmodels.InlineKeyboardButton{},
 		},
