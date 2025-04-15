@@ -53,19 +53,19 @@ func (n *NutritionAgent) GenerateMealPlan(ctx context.Context,
 	}
 
 	// Then ask for a meal plan explanation
-	explanationResponse, err := n.generateMealPlanExplanationFromLLM(ctx, mealResponse, planType)
+	explanationResponse, err := n.generateMealPlanExplanationFromLLM(ctx, user, mealResponse, planType)
 	if err != nil {
 		return models.CompleteMealPlan{}, err
 	}
 
 	// Then ask for a meal plan preparation
-	preparationResponse, err := n.generateMealPlanPreparationFromLLM(ctx, mealResponse, planType)
+	preparationResponse, err := n.generateMealPlanPreparationFromLLM(ctx, user, mealResponse, planType)
 	if err != nil {
 		return models.CompleteMealPlan{}, err
 	}
 
 	// Then create the shopping list for this plan
-	shoppingList, err := n.generateMealPlanShoppingListfromLLM(ctx, mealResponse.Plan)
+	shoppingList, err := n.generateMealPlanShoppingListfromLLM(ctx, user, mealResponse.Plan)
 	if err != nil {
 		return models.CompleteMealPlan{}, err
 	}
@@ -147,6 +147,7 @@ func (n *NutritionAgent) generateMealPlanFromLLM(ctx context.Context,
 		"CombinedInput":     combinedInput,
 		"PreviousPlanInput": previousPlanInput.String(),
 		"PlanType":          planType,
+		"UserLanguage":      user.Language,
 	}
 
 	prompt, err := promptTemplate.Format(promptInput)
@@ -170,7 +171,9 @@ func (n *NutritionAgent) generateMealPlanFromLLM(ctx context.Context,
 // generateMealPlanExplanationFromLLM generates a comprehensive explanation for a given meal plan.
 // It formats the input meal plan into a structured prompt and calls the LLM to generate the explanation.
 // The function will return an error if there was an issue with the LLM call or unmarshalling the response.
-func (n *NutritionAgent) generateMealPlanExplanationFromLLM(ctx context.Context,
+func (n *NutritionAgent) generateMealPlanExplanationFromLLM(
+	ctx context.Context,
+	user *database.User,
 	mealPlan models.MealPlan,
 	planType database.PlanType,
 ) (models.MealPlanExplanation, error) {
@@ -180,6 +183,7 @@ func (n *NutritionAgent) generateMealPlanExplanationFromLLM(ctx context.Context,
 	promptInput := map[string]any{
 		"PlanFromChain1": mealPlan.Plan,
 		"PlanType":       planType,
+		"UserLanguage":   user.Language,
 	}
 
 	prompt, err := promptTemplate.Format(promptInput)
@@ -201,7 +205,9 @@ func (n *NutritionAgent) generateMealPlanExplanationFromLLM(ctx context.Context,
 }
 
 // generateMealPlanPreparationFromLLM generates comprehensive preparation steps for a given meal plan.
-func (n *NutritionAgent) generateMealPlanPreparationFromLLM(ctx context.Context,
+func (n *NutritionAgent) generateMealPlanPreparationFromLLM(
+	ctx context.Context,
+	user *database.User,
 	mealPlan models.MealPlan,
 	planType database.PlanType,
 ) (models.MealPlanPreparation, error) {
@@ -211,6 +217,7 @@ func (n *NutritionAgent) generateMealPlanPreparationFromLLM(ctx context.Context,
 	promptInput := map[string]any{
 		"PlanFromChain1": mealPlan.Plan,
 		"PlanType":       planType,
+		"UserLanguage":   user.Language,
 	}
 
 	prompt, err := promptTemplate.Format(promptInput)
@@ -263,7 +270,11 @@ func appendMacros(user *database.User) string {
 // generateMealPlanShoppingListfromLLM generates a shopping list for a given meal plan.
 // It formats the foods from the plan and prompts the LLM to generate a shopping list.
 // The function will return an error if there was an issue with the LLM call or unmarshalling the response.
-func (n *NutritionAgent) generateMealPlanShoppingListfromLLM(ctx context.Context, plan []models.MealPlanFood) ([]models.MealPlanShoppingList, error) {
+func (n *NutritionAgent) generateMealPlanShoppingListfromLLM(
+	ctx context.Context,
+	user *database.User,
+	plan []models.MealPlanFood,
+) ([]models.MealPlanShoppingList, error) {
 	log.Debug().Msg("Creating meal plan shopping list")
 	if len(plan) == 0 {
 		return []models.MealPlanShoppingList{}, errors.New("plan is empty")
@@ -279,7 +290,8 @@ func (n *NutritionAgent) generateMealPlanShoppingListfromLLM(ctx context.Context
 
 	promptTemplate := prompts.NewPromptTemplate(NewMealPlanShoppingListTemplate(), []string{"Input"})
 	promptInput := map[string]any{
-		"Input": combinedInput,
+		"Input":        combinedInput,
+		"UserLanguage": user.Language,
 	}
 
 	prompt, err := promptTemplate.Format(promptInput)

@@ -69,6 +69,12 @@ const (
 	KeyPremiumRequired                = "premium_required"
 	KeyFeedbackStartButton            = "feedback_start_button"
 	KeyErrorResponseGeneric           = "error_response_generic" // Generic error for ErrorResponse func
+	KeyMealPlanDocumentBreakfast      = "meal_plan_document_breakfast"
+	KeyMealPlanDocumentLunch          = "meal_plan_document_lunch"
+	KeyMealPlanDocumentDinner         = "meal_plan_document_dinner"
+	KeyMealPlanDocumentSnack          = "meal_plan_document_snack"
+	KeyMealPlanDocumentPreparation    = "meal_plan_document_preparation"
+	KeyMealPlanDocumentShoppingList   = "meal_plan_document_shopping_list"
 )
 
 var translations = map[string]map[database.UserLanguage]string{
@@ -327,6 +333,30 @@ Obtén un límite mayor de planes de comidas por semana y seguimientos programad
 	KeyErrorResponseGeneric: {
 		database.UserLanguageEnglish: "An error occurred. Please try again later.",
 		database.UserLanguageSpanish: "Ocurrió un error. Por favor, inténtalo de nuevo más tarde.",
+	},
+	KeyMealPlanDocumentBreakfast: {
+		database.UserLanguageEnglish: "Breakfast",
+		database.UserLanguageSpanish: "Desayuno",
+	},
+	KeyMealPlanDocumentLunch: {
+		database.UserLanguageEnglish: "Lunch",
+		database.UserLanguageSpanish: "Almuerzo",
+	},
+	KeyMealPlanDocumentDinner: {
+		database.UserLanguageEnglish: "Dinner",
+		database.UserLanguageSpanish: "Cena",
+	},
+	KeyMealPlanDocumentSnack: {
+		database.UserLanguageEnglish: "Snack",
+		database.UserLanguageSpanish: "Snack",
+	},
+	KeyMealPlanDocumentPreparation: {
+		database.UserLanguageEnglish: "Preparation",
+		database.UserLanguageSpanish: "Preparación",
+	},
+	KeyMealPlanDocumentShoppingList: {
+		database.UserLanguageEnglish: "Shopping List",
+		database.UserLanguageSpanish: "Lista de compras",
 	},
 }
 

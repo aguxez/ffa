@@ -41,6 +41,9 @@ func NewMealPlanPromptTemplate() string {
 	Last accepted meal plan context (null means no previous plan):
 	{{.PreviousPlanInput}}
 
+	Consider the user language for the output generation:
+	{{.UserLanguage}}
+
 	Your Final Answer must be in this specific JSON format:
 	{
 			"plan": [
@@ -53,7 +56,8 @@ func NewMealPlanPromptTemplate() string {
 			],
 	}
 
-	Where "foodCategory" must be one of: breakfast, lunch, dinner, or snack.`
+	Where "foodCategory" must be one of: breakfast, lunch, dinner, or snack.
+	`
 }
 
 // NewMealPlanExplanationTemplate returns a string representing a template for a prompt
@@ -79,6 +83,9 @@ This meal plan is for a {{.PlanType}} plan.
 
 Context:
 {{.PlanFromChain1}}
+
+Consider the user language for the output generation:
+{{.UserLanguage}}
 
 	{
 		"planExplanation": "(string, NO MARKDOWN)",
@@ -106,6 +113,9 @@ You are a personal nutritionist specializing in meal prep. Based on the followin
 
 Meal Plan Items:
 {{.PlanFromChain1}}
+
+Consider the user language for the output generation:
+{{.UserLanguage}}
 
 Your output should include only the content for the "planPreparation" object in the final JSON with these three keys:
 - breakfast: Detailed prep instructions for breakfast items
@@ -189,6 +199,9 @@ func NewMealPlanShoppingListTemplate() string {
 
 	Context:
 	{{.Input}}
+
+	Consider the user language for the output generation:
+	{{.UserLanguage}}
 
 	[
 		{

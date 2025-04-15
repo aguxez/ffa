@@ -150,7 +150,7 @@ func (h *MealPlanHandler) generatePlan(ctx context.Context, bot *tgbot.Bot, upda
 	logger.Debug().Msg("Created meal plan")
 
 	// Generate PDF
-	doc, err := GenerateDocFromMealPlan(plan)
+	doc, err := GenerateDocFromMealPlan(plan, user.Language)
 	if err != nil {
 		logger.Err(err).Msg("Error generating document")
 		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorGenerateDoc, userLang))
