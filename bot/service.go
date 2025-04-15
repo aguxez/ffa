@@ -8,6 +8,7 @@ import (
 	"github.com/aguxez/ffa/agent"
 	"github.com/aguxez/ffa/config"
 	"github.com/aguxez/ffa/database"
+	"github.com/aguxez/ffa/i18n"
 	"github.com/aguxez/ffa/messaging"
 	"github.com/aguxez/ffa/models"
 	tgbot "github.com/go-telegram/bot"
@@ -250,18 +251,20 @@ func (s *BotService) SendMessage(user database.User, message string, options ...
 	}
 
 	inlineKeyboardButtons := [][]tgmodels.InlineKeyboardButton{}
+	// Determine user language for button text
+	userLang := user.Language
 	if defaultOpts.WithInlineKeyboardFeedback {
 		inlineKeyboardButtons = append(inlineKeyboardButtons, []tgmodels.InlineKeyboardButton{
 			{
-				Text:         "Start ✅",
+				Text:         i18n.GetText(i18n.KeyFeedbackStartButton, userLang),
 				CallbackData: string(CallbackDataMealPlanFeedbackStart),
 			},
 		})
 	}
 
 	_, err := s.bot.SendMessage(ctx, &tgbot.SendMessageParams{
-		ChatID: user.ChatID,
-		Text:   message,
+		ChatID: *user.ChatID, // Dereference pointer
+		Text:   message,      // Assume message is already constructed/translated if needed by caller
 		ReplyMarkup: &tgmodels.InlineKeyboardMarkup{
 			InlineKeyboard: inlineKeyboardButtons,
 		},
@@ -275,41 +278,44 @@ func (s *BotService) SendMessage(user database.User, message string, options ...
 // is presented for the user to upgrade.
 func (deps *HandlerDependencies) EnsurePremium(next tgbot.HandlerFunc, handlerWithConstraints HandlerWithConstraints) tgbot.HandlerFunc {
 	return func(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) {
-		// If handler is premium, we need to ensure the user is premium before
-		// allowing them to do anything
 		userID := uint(0)
 		chatID := int64(0)
+		var userLang database.UserLanguage = database.UserLanguageEnglish
 
+		// Determine userID, chatID, and attempt to get user language
 		if update.Message != nil {
 			userID = uint(update.Message.From.ID)
 			chatID = update.Message.Chat.ID
-		}
-
-		if update.CallbackQuery != nil {
+		} else if update.CallbackQuery != nil {
 			userID = uint(update.CallbackQuery.From.ID)
-
 			if update.CallbackQuery.Message.Message != nil {
 				chatID = update.CallbackQuery.Message.Message.Chat.ID
 			}
 		}
-
 		// If userID is still 0, something is wrong
-		if userID == 0 {
-			log.Error().Msg("Could not determine userID in EnsurePremium middleware")
+		if userID == 0 || chatID == 0 {
+			log.Error().Msg("Could not determine userID or chatID in EnsurePremium middleware")
 			return
 		}
 
 		logger := log.With().Uint("userID", userID).Int64("chatID", chatID).Logger()
 
+		// Attempt to get user language
+		user, err := deps.DB.GetUser(userID)
+		if err != nil {
+			logger.Warn().Err(err).Msg("Could not get user language in EnsurePremium, defaulting to English")
+		}
+		userLang = user.Language
+
+		// Check premium status if required by the handler
 		if handlerWithConstraints.isPremium {
 			isPremium, err := deps.DB.IsUserPremium(userID)
 			if err != nil {
 				logger.Err(err).Msg("Error checking if user is premium")
-				// Optionally send a message back to the user if chatID is known
 				if chatID != 0 {
 					bot.SendMessage(ctx, &tgbot.SendMessageParams{
 						ChatID: chatID,
-						Text:   "Sorry, there was an error checking your premium status.",
+						Text:   i18n.GetText(i18n.KeyErrorPremiumCheck, userLang),
 					})
 				}
 				return
@@ -317,16 +323,15 @@ func (deps *HandlerDependencies) EnsurePremium(next tgbot.HandlerFunc, handlerWi
 
 			if !isPremium {
 				logger.Warn().Msg("User is not premium but tried to access a premium feature")
-				// Send a message informing the user they need premium if chatID is known
 				if chatID != 0 {
 					bot.SendMessage(ctx, &tgbot.SendMessageParams{
 						ChatID: chatID,
-						Text:   "This feature requires a premium subscription.",
+						Text:   i18n.GetText(i18n.KeyPremiumRequired, userLang),
 						ReplyMarkup: &tgmodels.InlineKeyboardMarkup{
 							InlineKeyboard: [][]tgmodels.InlineKeyboardButton{
 								{
 									{
-										Text:         "⭐Upgrade to premium⭐",
+										Text:         i18n.GetText(i18n.KeyUpgradePremiumButton, userLang),
 										CallbackData: string(CallbackDataMakePayment),
 									},
 								},
@@ -334,10 +339,11 @@ func (deps *HandlerDependencies) EnsurePremium(next tgbot.HandlerFunc, handlerWi
 						},
 					})
 				}
-				return
+				return // Stop processing for non-premium user on premium feature
 			}
 		}
 
+		// User is premium or feature doesn't require it, proceed to the actual handler
 		next(ctx, bot, update)
 	}
 }

@@ -3,6 +3,7 @@ package bot
 import (
 	"context"
 
+	"github.com/aguxez/ffa/i18n"
 	"github.com/aguxez/ffa/models"
 	tgbot "github.com/go-telegram/bot"
 	tgmodels "github.com/go-telegram/bot/models"
@@ -34,6 +35,17 @@ func (h *PlanAcceptanceHandler) Handle(ctx context.Context, bot *tgbot.Bot, upda
 	chatID := update.CallbackQuery.Message.Message.Chat.ID
 	messageID := update.CallbackQuery.Message.Message.ID
 
+	logger := log.With().Uint("userID", userID).Str("handler", "PlanAcceptanceHandler").Logger()
+
+	// Get user language first
+	user, err := h.deps.DB.GetUser(userID)
+	if err != nil {
+		logger.Err(err).Msg("Error getting user")
+		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorResponseGeneric, "en"))
+		return
+	}
+	userLang := user.Language
+
 	// Reset user state
 	h.deps.StateManager.SetUserState(userID, models.ConversationStageNull)
 
@@ -41,12 +53,13 @@ func (h *PlanAcceptanceHandler) Handle(ctx context.Context, bot *tgbot.Bot, upda
 	// feedback down the line
 	if h.isPlanAccepted {
 		if err := h.deps.DB.AcceptUserMealPlan(userID, messageID); err != nil {
-			log.Err(err).Msg("Error accepting plan")
+			logger.Err(err).Msg("Error accepting plan")
+			ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorResponseGeneric, userLang))
 			return
 		}
 
 		// Remove markup from previous message
-		_, err := bot.EditMessageReplyMarkup(ctx, &tgbot.EditMessageReplyMarkupParams{
+		_, err = bot.EditMessageReplyMarkup(ctx, &tgbot.EditMessageReplyMarkupParams{
 			ChatID:    chatID,
 			MessageID: messageID,
 			ReplyMarkup: &tgmodels.InlineKeyboardMarkup{
@@ -54,18 +67,19 @@ func (h *PlanAcceptanceHandler) Handle(ctx context.Context, bot *tgbot.Bot, upda
 			},
 		})
 		if err != nil {
-			log.Err(err).Msg("Error removing markup from previous message")
-			return
+			// Log error but continue to send confirmation message
+			logger.Err(err).Msg("Error removing markup from previous message after plan acceptance")
 		}
 
+		// Send confirmation message
 		_, err = bot.SendMessage(ctx, &tgbot.SendMessageParams{
 			ChatID: chatID,
-			Text:   "Your plan has been saved and will be used for further feedback and check-ins.",
+			Text:   i18n.GetText(i18n.KeyPlanSavedConfirmation, userLang), // Use i18n
 			ReplyMarkup: &tgmodels.InlineKeyboardMarkup{
 				InlineKeyboard: [][]tgmodels.InlineKeyboardButton{
 					{
 						{
-							Text:         "↼ Back to options",
+							Text:         i18n.GetText(i18n.KeyBackToOptionsButton, userLang), // Use i18n
 							CallbackData: string(CallbackDataBackToOptions),
 						},
 					},
@@ -73,11 +87,11 @@ func (h *PlanAcceptanceHandler) Handle(ctx context.Context, bot *tgbot.Bot, upda
 			},
 		})
 		if err != nil {
-			log.Err(err).Msg("Error sending message")
+			logger.Err(err).Msg("Error sending plan acceptance confirmation message")
 			return
 		}
 
-		return
+		return // Plan accepted, flow ends here
 	}
 
 	// Create a new plan for the user

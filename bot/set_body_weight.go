@@ -4,6 +4,7 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/aguxez/ffa/i18n"
 	"github.com/aguxez/ffa/models"
 	tgbot "github.com/go-telegram/bot"
 	tgmodels "github.com/go-telegram/bot/models"
@@ -22,24 +23,36 @@ func NewSetBodyWeightHandler(deps *HandlerDependencies) *SetBodyWeightHandler {
 	}
 }
 
-// Handle handles the message stage for the dietary restrictions
+// Handle handles the message stage for setting body weight
 func (h *SetBodyWeightHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) {
-	log.
-		Debug().
-		Str("handler", "SetBodyWeightHandler").
-		Msg("Handling set body weight")
+	userID := uint(update.CallbackQuery.From.ID)
+	chatID := update.CallbackQuery.Message.Message.Chat.ID
+	messageID := update.CallbackQuery.Message.Message.ID
+
+	logger := log.With().Uint("userID", userID).Str("handler", "SetBodyWeightHandler").Logger()
+	logger.Debug().Msg("Handling set body weight")
+
+	// Get user language
+	user, err := h.deps.DB.GetUser(userID)
+	if err != nil {
+		logger.Err(err).Msg("Error getting user")
+		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorResponseGeneric, "en"))
+		return
+	}
+	userLang := user.Language
 
 	// Set user state
-	h.deps.StateManager.SetUserState(uint(update.CallbackQuery.From.ID), models.ConversationStageSetBodyWeight)
+	h.deps.StateManager.SetUserState(userID, models.ConversationStageSetBodyWeight)
 
 	// Edit the previous message's text
-	_, err := bot.EditMessageText(ctx, &tgbot.EditMessageTextParams{
-		ChatID:    update.CallbackQuery.Message.Message.Chat.ID,
-		MessageID: update.CallbackQuery.Message.Message.ID,
-		Text:      "Tell me your body weight in kilograms.",
+	_, err = bot.EditMessageText(ctx, &tgbot.EditMessageTextParams{
+		ChatID:    chatID,
+		MessageID: messageID,
+		Text:      i18n.GetText(i18n.KeyBodyWeightPrompt, userLang),
 	})
 	if err != nil {
-		log.Err(err).Msg("Error sending set dietary restrictions message")
+		// Log the error, but don't send another message as the original might still be visible
+		logger.Err(err).Msg("Error sending set body weight prompt message")
 		return
 	}
 }
@@ -56,48 +69,58 @@ func NewSetBodyWeightMessageHandler(deps *HandlerDependencies) *SetBodyWeightMes
 	}
 }
 
-// Handle handles the set dietary restrictions command
+// Handle handles the message containing the user's body weight
 func (h *SetBodyWeightMessageHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) {
-	log.Debug().Str("handler", "SetBodyWeightMessageHandler").Msg("Handling set body weight conversation stage")
-
 	userID := uint(update.Message.From.ID)
 	chatID := update.Message.Chat.ID
+
+	logger := log.With().Uint("userID", userID).Str("handler", "SetBodyWeightMessageHandler").Logger()
+	logger.Debug().Msg("Handling set body weight conversation stage")
+
+	// Get user language
+	user, err := h.deps.DB.GetUser(userID)
+	if err != nil {
+		logger.Err(err).Msg("Error getting user")
+		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorResponseGeneric, "en"))
+		return
+	}
+	userLang := user.Language
 
 	parsedWeight, err := strconv.ParseFloat(update.Message.Text, 64)
 	if err != nil {
 		// Send message informing about the error
-		log.Err(err).Msg("Error parsing dietary restrictions message")
-
-		_, err = bot.SendMessage(ctx, &tgbot.SendMessageParams{
+		logger.Err(err).Str("input", update.Message.Text).Msg("Error parsing body weight message")
+		_, sendErr := bot.SendMessage(ctx, &tgbot.SendMessageParams{
 			ChatID: chatID,
-			Text:   "Please enter a valid number for your body weight.",
+			Text:   i18n.GetText(i18n.KeyBodyWeightInvalidInput, userLang),
 		})
-		if err != nil {
-			log.Err(err).Msg("Error sending dietary restrictions error message")
+		if sendErr != nil {
+			logger.Err(sendErr).Msg("Error sending body weight invalid input message")
 		}
-
+		// Keep user in the same state to allow re-entry
 		return
 	}
 
-	// Set user state after we have parsed the weight
+	// Set user state after we have successfully parsed the weight
 	h.deps.StateManager.SetUserState(userID, models.ConversationStageNull)
 
 	// Update user's body weight
 	err = h.deps.DB.UpdateUserWeight(userID, parsedWeight)
 	if err != nil {
-		log.Err(err).Msg("Error updating user's dietary restrictions")
+		logger.Err(err).Msg("Error updating user's body weight")
+		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorResponseGeneric, userLang))
 		return
 	}
 
 	// Send message informing about the update
 	_, err = bot.SendMessage(ctx, &tgbot.SendMessageParams{
 		ChatID: chatID,
-		Text:   "Your body weight has been saved!",
+		Text:   i18n.GetText(i18n.KeyBodyWeightSaved, userLang),
 		ReplyMarkup: &tgmodels.InlineKeyboardMarkup{
 			InlineKeyboard: [][]tgmodels.InlineKeyboardButton{
 				{
 					{
-						Text:         "↼ Back to options",
+						Text:         i18n.GetText(i18n.KeyBackToOptionsButton, userLang),
 						CallbackData: string(CallbackDataBackToOptions),
 					},
 				},
@@ -105,7 +128,7 @@ func (h *SetBodyWeightMessageHandler) Handle(ctx context.Context, bot *tgbot.Bot
 		},
 	})
 	if err != nil {
-		log.Err(err).Msg("Error sending dietary restrictions message")
+		logger.Err(err).Msg("Error sending body weight saved confirmation message")
 		return
 	}
 }

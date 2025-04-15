@@ -101,10 +101,11 @@ func (r *HandlerRegistry) Get(key string) Handler {
 	return r.handlers[key]
 }
 
-// ErrorResponse sends an error response to the user
-func ErrorResponse(ctx context.Context, bot *tgbot.Bot, chatID int64, msg string) {
+// ErrorResponse sends an error response to the user.
+// The msg parameter should be the already translated error message.
+func ErrorResponse(ctx context.Context, bot *tgbot.Bot, chatID int64, translatedMsg string) {
 	bot.SendMessage(ctx, &tgbot.SendMessageParams{
 		ChatID: chatID,
-		Text:   msg,
+		Text:   translatedMsg,
 	})
 }

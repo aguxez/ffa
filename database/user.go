@@ -13,6 +13,13 @@ const (
 	PlanTypeWeekends PlanType = "weekends"
 )
 
+type UserLanguage string
+
+const (
+	UserLanguageEnglish = "en"
+	UserLanguageSpanish = "es"
+)
+
 type User struct {
 	gorm.Model
 
@@ -30,6 +37,7 @@ type User struct {
 	ChatID                          *int64     `gorm:"index"`
 	IsPremium                       bool       `gorm:"not null;default:false"`
 	Payments                        []UserPayment
+	Language                        UserLanguage `gorm:"not null;type:varchar(3);default:en"`
 }
 
 type UserFood struct {

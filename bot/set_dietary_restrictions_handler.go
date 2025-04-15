@@ -3,6 +3,7 @@ package bot
 import (
 	"context"
 
+	"github.com/aguxez/ffa/i18n"
 	"github.com/aguxez/ffa/models"
 	tgbot "github.com/go-telegram/bot"
 	tgmodels "github.com/go-telegram/bot/models"
@@ -20,24 +21,35 @@ func NewSetDietaryRestrictionsHandler(deps *HandlerDependencies) *SetDietaryRest
 	}
 }
 
-// Handle handles the message stage for the dietary restrictions
+// Handle handles the message stage for setting dietary restrictions
 func (h *SetDietaryRestrictionsHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) {
-	log.
-		Debug().
-		Str("handler", "SetDietaryRestrictionsHandler").
-		Msg("Handling set dietary restrictions")
+	userID := uint(update.CallbackQuery.From.ID)
+	chatID := update.CallbackQuery.Message.Message.Chat.ID
+	messageID := update.CallbackQuery.Message.Message.ID
+
+	logger := log.With().Uint("userID", userID).Str("handler", "SetDietaryRestrictionsHandler").Logger()
+	logger.Debug().Msg("Handling set dietary restrictions")
+
+	// Get user language
+	user, err := h.deps.DB.GetUser(userID)
+	if err != nil {
+		logger.Err(err).Msg("Error getting user")
+		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorResponseGeneric, "en"))
+		return
+	}
+	userLang := user.Language
 
 	// Set user state
-	h.deps.StateManager.SetUserState(uint(update.CallbackQuery.From.ID), models.ConversationStageSetDietaryRestrictions)
+	h.deps.StateManager.SetUserState(userID, models.ConversationStageSetDietaryRestrictions)
 
 	// Edit the previous message's text
-	_, err := bot.EditMessageText(ctx, &tgbot.EditMessageTextParams{
-		ChatID:    update.CallbackQuery.Message.Message.Chat.ID,
-		MessageID: update.CallbackQuery.Message.Message.ID,
-		Text:      "Tell me any food allergies, intolerances, or dietary preferences (vegan, vegetarian, gluten-free, etc.). Your meal plans will automatically exclude restricted ingredients.",
+	_, err = bot.EditMessageText(ctx, &tgbot.EditMessageTextParams{
+		ChatID:    chatID,
+		MessageID: messageID,
+		Text:      i18n.GetText(i18n.KeyDietaryRestrictionsPrompt, userLang),
 	})
 	if err != nil {
-		log.Err(err).Msg("Error sending set dietary restrictions message")
+		logger.Err(err).Msg("Error sending set dietary restrictions prompt message")
 		return
 	}
 }
@@ -53,40 +65,52 @@ func NewSetDietaryRestrictionsMessageHandler(deps *HandlerDependencies) *SetDiet
 	}
 }
 
-// Handle handles the set dietary restrictions command
+// Handle handles the message containing the user's dietary restrictions
 func (h *SetDietaryRestrictionsMessageHandler) Handle(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update) {
-	log.Debug().Str("handler", "SetDietaryRestrictionsMessageHandler").Msg("Handling set dietary restrictions")
-
 	userID := uint(update.Message.From.ID)
 	chatID := update.Message.Chat.ID
 	messageTxt := update.Message.Text
 
-	// Set user state
+	logger := log.With().Uint("userID", userID).Str("handler", "SetDietaryRestrictionsMessageHandler").Logger()
+	logger.Debug().Msg("Handling set dietary restrictions message")
+
+	// Get user language
+	user, err := h.deps.DB.GetUser(userID)
+	if err != nil {
+		logger.Err(err).Msg("Error getting user")
+		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorResponseGeneric, "en"))
+		return
+	}
+	userLang := user.Language
+
+	// Set user state first, before potential errors in processing/saving
 	h.deps.StateManager.SetUserState(userID, models.ConversationStageNull)
 
 	// Process the message with the LLM
 	userDietaryRestrictions, err := h.deps.NaturalLanguageAgent.ParseDietaryRestrictionsMessage(ctx, messageTxt)
 	if err != nil {
-		log.Err(err).Msg("Error parsing dietary restrictions message")
+		logger.Err(err).Msg("Error parsing dietary restrictions message")
+		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorResponseGeneric, userLang)) // Inform user
 		return
 	}
 
 	// Update user's dietary restrictions
 	err = h.deps.DB.SaveUserDietaryRestrictions(userID, userDietaryRestrictions)
 	if err != nil {
-		log.Err(err).Msg("Error updating user's dietary restrictions")
+		logger.Err(err).Msg("Error saving user's dietary restrictions")
+		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorResponseGeneric, userLang))
 		return
 	}
 
 	// Send message informing about the update
 	_, err = bot.SendMessage(ctx, &tgbot.SendMessageParams{
 		ChatID: chatID,
-		Text:   "Amazing. Your dietary restrictions have been updated!",
+		Text:   i18n.GetText(i18n.KeyDietaryRestrictionsUpdated, userLang),
 		ReplyMarkup: &tgmodels.InlineKeyboardMarkup{
 			InlineKeyboard: [][]tgmodels.InlineKeyboardButton{
 				{
 					{
-						Text:         "↼ Back to options",
+						Text:         i18n.GetText(i18n.KeyBackToOptionsButton, userLang),
 						CallbackData: string(CallbackDataBackToOptions),
 					},
 				},
@@ -94,7 +118,7 @@ func (h *SetDietaryRestrictionsMessageHandler) Handle(ctx context.Context, bot *
 		},
 	})
 	if err != nil {
-		log.Err(err).Msg("Error sending dietary restrictions message")
+		logger.Err(err).Msg("Error sending dietary restrictions update confirmation message")
 		return
 	}
 }
