@@ -162,7 +162,7 @@ func (s *BotService) RegisterHandlers() {
 		CallbackDataMealPlanFeedbackDinnerBad:  {handler: feedbackRequestHandler, isPremium: true},
 
 		// Payments
-		CallbackDataMakePayment: {handler: paymentHandler, isPremium: true}, // Payment handler is premium
+		CallbackDataMakePayment: {handler: paymentHandler, isPremium: false},
 	}
 
 	// Register exact match handlers first

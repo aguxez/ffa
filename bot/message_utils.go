@@ -108,6 +108,13 @@ func getGenerateMealPlanMessageFromUser(user *database.User, numberOfCreatedPlan
 		return i18n.GetText(i18n.KeyGenerateMealPlanButtonPremium, userLang)
 	}
 
+	// This basically takes into consideration the maximum number of plans.
+	// If for some reason someone goes back to a free version after being
+	// premium they'd have more plans than allowed, normally. To prevent a situation
+	// where the text shows (10/2), for example, we cap the number of plans
+	// to not be greater than the maximum allowed
+	numberOfCreatedPlansWithLimit := min(numberOfCreatedPlans, MAX_FREE_USERS_PLANS)
+
 	// Use GetTextf for formatted string
-	return i18n.GetTextf(i18n.KeyGenerateSamplePlanButtonFormat, userLang, numberOfCreatedPlans, MAX_FREE_USERS_PLANS)
+	return i18n.GetTextf(i18n.KeyGenerateSamplePlanButtonFormat, userLang, numberOfCreatedPlansWithLimit, MAX_FREE_USERS_PLANS)
 }

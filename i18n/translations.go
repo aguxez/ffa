@@ -132,7 +132,7 @@ También puedes especificar solo algunos macros (p. ej., solo calorías). Todos 
 	},
 	KeyMaxPlansReached: {
 		database.UserLanguageEnglish: "You have reached the maximum number of meal plans. You can upgrade to enjoy all features!",
-		database.UserLanguageSpanish: "Has alcanzado el número máximo de planes de comidas. ¡Puedes actualizar para disfrutar de todas las funciones!",
+		database.UserLanguageSpanish: "Has alcanzado el número máximo de planes de comidas. ¡Puedes comprar RawPlan Premium para disfrutar de todas las funciones!",
 	},
 	KeyGeneratingPlan: {
 		database.UserLanguageEnglish: "I'm generating a plan for you. This can take a minute.",
@@ -196,7 +196,7 @@ También puedes especificar solo algunos macros (p. ej., solo calorías). Todos 
 	},
 	KeyGenerateSamplePlanButtonFormat: {
 		database.UserLanguageEnglish: "Generate sample plan (%v/%v)",
-		database.UserLanguageSpanish: "Generar plan de ejemplo (%v/%v)",
+		database.UserLanguageSpanish: "Generar ejemplar de plan (%v/%v)",
 	},
 	KeyGenerateWeekendPlanButton: {
 		database.UserLanguageEnglish: "Generate weekend plan",
@@ -204,7 +204,7 @@ También puedes especificar solo algunos macros (p. ej., solo calorías). Todos 
 	},
 	KeyUpgradePremiumButton: {
 		database.UserLanguageEnglish: "⭐Upgrade to premium⭐",
-		database.UserLanguageSpanish: "⭐Actualizar a premium⭐",
+		database.UserLanguageSpanish: "⭐Vuélvete premium⭐",
 	},
 	KeyInitialMenuPrompt: {
 		database.UserLanguageEnglish: "Create personalized meal plans based on your preferences.\n\nSelect an option to build your plan:",
