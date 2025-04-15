@@ -3,7 +3,6 @@ package bot
 import (
 	"github.com/aguxez/ffa/database"
 	"github.com/aguxez/ffa/i18n" // Import the i18n package
-	"github.com/go-telegram/bot"
 	tgbot "github.com/go-telegram/bot"
 	tgmodels "github.com/go-telegram/bot/models"
 )
@@ -13,7 +12,7 @@ import (
 // Premium users have additional options to set dietary restrictions, macros, body weight, and plan duration.
 // All users can add and view favorite foods and generate meal plans.
 // If the user is not premium, an upgrade option is displayed.
-func InitialMenuMessageParams(chatID int64, user *database.User, numberOfCreatedPlans int64) *bot.SendMessageParams {
+func InitialMenuMessageParams(chatID int64, user *database.User, numberOfCreatedPlans int64) *tgbot.SendMessageParams {
 	var buttons [][]tgmodels.InlineKeyboardButton
 
 	userLang := user.Language // Get user language
@@ -91,7 +90,7 @@ func InitialMenuMessageParams(chatID int64, user *database.User, numberOfCreated
 	}
 
 	return &tgbot.SendMessageParams{
-		Text:   i18n.GetText(i18n.KeyInitialMenuPrompt, userLang), // Use i18n
+		Text:   i18n.GetText(i18n.KeyInitialMenuPrompt, userLang),
 		ChatID: chatID,
 		ReplyMarkup: &tgmodels.InlineKeyboardMarkup{
 			InlineKeyboard: buttons, // Buttons are already translated
