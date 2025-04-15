@@ -29,6 +29,12 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 	})
 
+	go func() {
+		if err := http.ListenAndServe(":8080", nil); err != nil {
+			log.Err(err).Msg("Error starting server")
+		}
+	}()
+
 	db, err := database.NewDatabase(cfg)
 	if err != nil {
 		log.Error().Msg(fmt.Sprintf("Error connecting to database: %v", err.Error()))
