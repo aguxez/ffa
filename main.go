@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/aguxez/ffa/bot"
 	"github.com/aguxez/ffa/config"
@@ -22,6 +23,11 @@ func main() {
 		log.Err(err).Msg("Error initializing app config")
 		return
 	}
+
+	// Start server for healthcheck
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
 
 	db, err := database.NewDatabase(cfg)
 	if err != nil {
