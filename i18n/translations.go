@@ -75,7 +75,9 @@ const (
 	KeyMealPlanDocumentSnack          = "meal_plan_document_snack"
 	KeyMealPlanDocumentPreparation    = "meal_plan_document_preparation"
 	KeyMealPlanDocumentShoppingList   = "meal_plan_document_shopping_list"
-	KeyMealPlanChangeLanguage         = "meal_plan_change_language"
+	KeyChangeLanguageButton           = "change_language_button"
+	KeyChangeLanguagePrompt           = "change_language_prompt"
+	KeyLanguageChanged                = "language_changed"
 )
 
 var translations = map[string]map[database.UserLanguage]string{
@@ -333,7 +335,7 @@ Obtén un límite mayor de planes de comidas por semana y seguimientos programad
 	},
 	KeyErrorResponseGeneric: {
 		database.UserLanguageEnglish: "An error occurred. Please try again later.",
-		database.UserLanguageSpanish: "Ocurrió un error. Por favor, inténtalo de nuevo más tarde.",
+		database.UserLanguageSpanish: "Ocurrió un error. Por favor, inténtalo de nuevo.",
 	},
 	KeyMealPlanDocumentBreakfast: {
 		database.UserLanguageEnglish: "Breakfast",
@@ -359,9 +361,17 @@ Obtén un límite mayor de planes de comidas por semana y seguimientos programad
 		database.UserLanguageEnglish: "Shopping List",
 		database.UserLanguageSpanish: "Lista de compras",
 	},
-	KeyMealPlanChangeLanguage: {
-		database.UserLanguageEnglish: "Change language",
-		database.UserLanguageSpanish: "Cambiar idioma",
+	KeyChangeLanguageButton: {
+		database.UserLanguageEnglish: "Change language 🇬🇧🇪🇸",
+		database.UserLanguageSpanish: "Cambiar idioma 🇬🇧🇪🇸",
+	},
+	KeyChangeLanguagePrompt: {
+		database.UserLanguageEnglish: "Select your preferred language.",
+		database.UserLanguageSpanish: "Selecciona tu idioma preferido.",
+	},
+	KeyLanguageChanged: {
+		database.UserLanguageEnglish: "Your language preference has been updated",
+		database.UserLanguageSpanish: "Tu preferencia de idioma ha sido actualizada",
 	},
 }
 

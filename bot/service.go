@@ -163,6 +163,11 @@ func (s *BotService) RegisterHandlers() {
 
 		// Payments
 		CallbackDataMakePayment: {handler: paymentHandler, isPremium: false},
+
+		// Settings
+		CallbackDataChangeLanguage:   {handler: NewSettingsHandler(handlerDeps), isPremium: false},
+		CallbackDataChangeLanguageEn: {handler: NewLanguageHandler(handlerDeps, CallbackDataChangeLanguageEn), isPremium: false},
+		CallbackDataChangeLanguageEs: {handler: NewLanguageHandler(handlerDeps, CallbackDataChangeLanguageEs), isPremium: false},
 	}
 
 	// Register exact match handlers first
@@ -281,9 +286,6 @@ func (deps *HandlerDependencies) EnsurePremium(next tgbot.HandlerFunc, handlerWi
 		userID := uint(0)
 		chatID := int64(0)
 
-		var userLang database.UserLanguage
-		userLang = database.UserLanguageEnglish
-
 		// Determine userID, chatID, and attempt to get user language
 		if update.Message != nil {
 			userID = uint(update.Message.From.ID)
@@ -307,7 +309,7 @@ func (deps *HandlerDependencies) EnsurePremium(next tgbot.HandlerFunc, handlerWi
 		if err != nil {
 			logger.Warn().Err(err).Msg("Could not get user language in EnsurePremium, defaulting to English")
 		}
-		userLang = user.Language
+		userLang := user.Language
 
 		// Check premium status if required by the handler
 		if handlerWithConstraints.isPremium {
@@ -341,7 +343,8 @@ func (deps *HandlerDependencies) EnsurePremium(next tgbot.HandlerFunc, handlerWi
 						},
 					})
 				}
-				return // Stop processing for non-premium user on premium feature
+				// Stop processing for non-premium user on premium feature
+				return
 			}
 		}
 

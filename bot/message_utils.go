@@ -57,14 +57,14 @@ func InitialMenuMessageParams(chatID int64, user *database.User, numberOfCreated
 			},
 			{
 				{
-					Text:         i18n.GetText(i18n.KeyGenerateWeekendPlanButton, userLang),
-					CallbackData: string(CallbackDataCreateWeekendPlan),
+					Text:         i18n.GetText(i18n.KeyChangeLanguageButton, userLang),
+					CallbackData: string(CallbackDataChangeLanguage),
 				},
 			},
 			{
 				{
-					Text:         i18n.GetText(i18n.KeyMealPlanChangeLanguage, userLang),
-					CallbackData: string(CallbackDataCreateWeekendPlan),
+					Text:         i18n.GetText(i18n.KeyGenerateWeekendPlanButton, userLang),
+					CallbackData: string(CallbackDataChangeLanguage),
 				},
 			},
 		}
@@ -84,6 +84,12 @@ func InitialMenuMessageParams(chatID int64, user *database.User, numberOfCreated
 				{
 					Text:         getGenerateMealPlanMessageFromUser(user, numberOfCreatedPlans), // Keep using helper
 					CallbackData: string(CallbackDataCreateMealPlan),
+				},
+			},
+			{
+				{
+					Text:         i18n.GetText(i18n.KeyChangeLanguageButton, userLang),
+					CallbackData: string(CallbackDataChangeLanguage),
 				},
 			},
 			{

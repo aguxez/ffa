@@ -64,6 +64,11 @@ const (
 
 	// Payments
 	CallbackDataMakePayment CallbackData = "callback_make_payment"
+
+	// Settings
+	CallbackDataChangeLanguage   CallbackData = "callback_change_language"
+	CallbackDataChangeLanguageEn CallbackData = "callback_change_language_en"
+	CallbackDataChangeLanguageEs CallbackData = "callback_change_language_es"
 )
 
 // Handler is the interface for all handlers
