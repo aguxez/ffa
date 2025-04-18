@@ -59,7 +59,7 @@ func InitialMenuMessageParams(chatID int64, user *database.User, numberOfCreated
 			{
 				{
 					Text:         i18n.GetText(i18n.KeyGenerateWeekendPlanButton, userLang),
-					CallbackData: string(CallbackDataChangeLanguage),
+					CallbackData: string(CallbackDataCreateWeekendPlan),
 				},
 			},
 			{

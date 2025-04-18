@@ -150,16 +150,16 @@ func (s *BotService) RegisterHandlers() {
 
 		// Meal Plan Feedback Handlers
 		// These handlers collect and process user feedback on meal plans
-		CallbackDataMealPlanFeedbackStart: {handler: feedbackRequestHandler, isPremium: true},
+		CallbackDataMealPlanFeedbackStart: {handler: feedbackRequestHandler, isPremium: false},
 		// Breakfast Feedback
-		CallbackDataMealPlanFeedbackBreakfastGood: {handler: feedbackRequestHandler, isPremium: true},
-		CallbackDataMealPlanFeedbackBreakfastBad:  {handler: feedbackRequestHandler, isPremium: true},
+		CallbackDataMealPlanFeedbackBreakfastGood: {handler: feedbackRequestHandler, isPremium: false},
+		CallbackDataMealPlanFeedbackBreakfastBad:  {handler: feedbackRequestHandler, isPremium: false},
 		// Lunch Feedback
-		CallbackDataMealPlanFeedbackLunchGood: {handler: feedbackRequestHandler, isPremium: true},
-		CallbackDataMealPlanFeedbackLunchBad:  {handler: feedbackRequestHandler, isPremium: true},
+		CallbackDataMealPlanFeedbackLunchGood: {handler: feedbackRequestHandler, isPremium: false},
+		CallbackDataMealPlanFeedbackLunchBad:  {handler: feedbackRequestHandler, isPremium: false},
 		// Dinner Feedback
-		CallbackDataMealPlanFeedbackDinnerGood: {handler: feedbackRequestHandler, isPremium: true},
-		CallbackDataMealPlanFeedbackDinnerBad:  {handler: feedbackRequestHandler, isPremium: true},
+		CallbackDataMealPlanFeedbackDinnerGood: {handler: feedbackRequestHandler, isPremium: false},
+		CallbackDataMealPlanFeedbackDinnerBad:  {handler: feedbackRequestHandler, isPremium: false},
 
 		// Payments
 		CallbackDataMakePayment: {handler: paymentHandler, isPremium: false},
