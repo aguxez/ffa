@@ -198,8 +198,8 @@ También puedes especificar solo algunos macros (p. ej., solo calorías). Todos 
 		database.UserLanguageSpanish: "Generar plan",
 	},
 	KeyGenerateSamplePlanButtonFormat: {
-		database.UserLanguageEnglish: "Generate sample plan (%v/%v)",
-		database.UserLanguageSpanish: "Generar ejemplar de plan (%v/%v)",
+		database.UserLanguageEnglish: "Generate week plan (%v/%v)",
+		database.UserLanguageSpanish: "Generar plan semanal (%v/%v)",
 	},
 	KeyGenerateWeekendPlanButton: {
 		database.UserLanguageEnglish: "Generate weekend plan",
@@ -210,7 +210,7 @@ También puedes especificar solo algunos macros (p. ej., solo calorías). Todos 
 		database.UserLanguageSpanish: "⭐Vuélvete premium⭐",
 	},
 	KeyInitialMenuPrompt: {
-		database.UserLanguageEnglish: "Create personalized meal plans based on your preferences.\n\nSelect an option to build your plan:",
+		database.UserLanguageEnglish: "Create personalized meal plans based on certain preferences.\n\nSelect an option to build your plan:",
 		database.UserLanguageSpanish: "Crea planes de comidas personalizados basados en tus preferencias.\n\nSelecciona una opción para construir tu plan:",
 	},
 	KeyInvoiceTitle: {

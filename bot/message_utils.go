@@ -51,7 +51,8 @@ func InitialMenuMessageParams(chatID int64, user *database.User, numberOfCreated
 			},
 			{
 				{
-					Text:         getGenerateMealPlanMessageFromUser(user, numberOfCreatedPlans), // Keep using helper
+					// Use this helper in this case
+					Text:         getGenerateMealPlanMessageFromUser(user, numberOfCreatedPlans),
 					CallbackData: string(CallbackDataCreateMealPlan),
 				},
 			},
@@ -81,8 +82,16 @@ func InitialMenuMessageParams(chatID int64, user *database.User, numberOfCreated
 				},
 			},
 			{
+
 				{
-					Text:         getGenerateMealPlanMessageFromUser(user, numberOfCreatedPlans), // Keep using helper
+					Text:         i18n.GetText(i18n.KeySetDietaryRestrictionsButton, userLang),
+					CallbackData: string(CallbackDataSetDietaryRestrictions),
+				},
+			},
+			{
+				{
+					// Use this helper in this case
+					Text:         getGenerateMealPlanMessageFromUser(user, numberOfCreatedPlans),
 					CallbackData: string(CallbackDataCreateMealPlan),
 				},
 			},
@@ -92,12 +101,12 @@ func InitialMenuMessageParams(chatID int64, user *database.User, numberOfCreated
 					CallbackData: string(CallbackDataChangeLanguage),
 				},
 			},
-			{
-				{
-					Text:         i18n.GetText(i18n.KeyUpgradePremiumButton, userLang),
-					CallbackData: string(CallbackDataMakePayment),
-				},
-			},
+			// {
+			// 	{
+			// 		Text:         i18n.GetText(i18n.KeyUpgradePremiumButton, userLang),
+			// 		CallbackData: string(CallbackDataMakePayment),
+			// 	},
+			// },
 		}
 	}
 

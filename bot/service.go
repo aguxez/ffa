@@ -118,7 +118,7 @@ func (s *BotService) RegisterHandlers() {
 		// These handlers manage the initial setup and configuration of meal plans
 		CallbackDataCreateMealPlan:         {handler: NewMealPlanHandler(handlerDeps, database.PlanTypeWeekdays), isPremium: false},
 		CallbackDataAddUserFood:            {handler: NewUserFoodHandler(handlerDeps), isPremium: false},
-		CallbackDataSetDietaryRestrictions: {handler: NewSetDietaryRestrictionsHandler(handlerDeps), isPremium: true},
+		CallbackDataSetDietaryRestrictions: {handler: NewSetDietaryRestrictionsHandler(handlerDeps), isPremium: false},
 		CallbackDataCreateWeekendPlan:      {handler: NewMealPlanHandler(handlerDeps, database.PlanTypeWeekends), isPremium: true},
 
 		// Meal Plan Schedule Handlers

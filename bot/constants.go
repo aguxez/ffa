@@ -1,5 +1,5 @@
 package bot
 
 const (
-	MAX_FREE_USERS_PLANS = 2
+	MAX_FREE_USERS_PLANS = 3
 )
