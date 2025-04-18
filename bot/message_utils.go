@@ -58,13 +58,13 @@ func InitialMenuMessageParams(chatID int64, user *database.User, numberOfCreated
 			},
 			{
 				{
-					Text:         i18n.GetText(i18n.KeyChangeLanguageButton, userLang),
+					Text:         i18n.GetText(i18n.KeyGenerateWeekendPlanButton, userLang),
 					CallbackData: string(CallbackDataChangeLanguage),
 				},
 			},
 			{
 				{
-					Text:         i18n.GetText(i18n.KeyGenerateWeekendPlanButton, userLang),
+					Text:         i18n.GetText(i18n.KeyChangeLanguageButton, userLang),
 					CallbackData: string(CallbackDataChangeLanguage),
 				},
 			},
