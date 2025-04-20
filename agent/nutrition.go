@@ -98,7 +98,7 @@ func (n *NutritionAgent) generateMealPlanFromLLM(ctx context.Context,
 	}
 
 	// Appending macros
-	macrosStr := appendMacros(user)
+	userMacros := appendMacros(user)
 
 	// Append dietary restrictions if any
 	var dietaryRestrictionsStr string
@@ -122,9 +122,8 @@ func (n *NutritionAgent) generateMealPlanFromLLM(ctx context.Context,
 	}
 
 	combinedInput := fmt.Sprintf(
-		"%s\n%s\n%s\n%s\n%s",
+		"%s\n%s\n%s\n%s",
 		foodsStr,
-		macrosStr,
 		dietaryRestrictionsStr,
 		weightStr,
 		planDurationDays,
@@ -145,6 +144,7 @@ func (n *NutritionAgent) generateMealPlanFromLLM(ctx context.Context,
 	promptTemplate := prompts.NewPromptTemplate(NewMealPlanPromptTemplate(), []string{"CombinedInput"})
 	promptInput := map[string]any{
 		"CombinedInput":     combinedInput,
+		"UserMacros":        userMacros,
 		"PreviousPlanInput": previousPlanInput.String(),
 		"PlanType":          planType,
 		"UserLanguage":      user.Language,
@@ -194,8 +194,11 @@ func (n *NutritionAgent) generateMealPlanExplanationFromLLM(
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, 120*time.Second)
 	defer cancel()
 
-	// Temperature is overridden to promote more diversity in answers for a given input
-	output, err := n.llm.Call(ctxWithTimeout, prompt, llms.WithModel(string(LLMModelGemini)))
+	output, err := n.llm.Call(ctxWithTimeout, prompt,
+		llms.WithModel(string(LLMModelGeminiTwoFlashLite)),
+		// This number of max tokens is a good balance to not have an overwhelming explanation
+		llms.WithMaxTokens(200),
+	)
 	if err != nil {
 		log.Err(err).Msg("Error calling LLM for plan explanation")
 		return models.MealPlanExplanation{}, err
@@ -228,8 +231,7 @@ func (n *NutritionAgent) generateMealPlanPreparationFromLLM(
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, 120*time.Second)
 	defer cancel()
 
-	// Temperature is overridden to promote more diversity in answers for a given input
-	output, err := n.llm.Call(ctxWithTimeout, prompt, llms.WithModel(string(LLMModelGemini)))
+	output, err := n.llm.Call(ctxWithTimeout, prompt, llms.WithModel(string(LLMModelGeminiTwoFlashLite)))
 	if err != nil {
 		log.Err(err).Msg("Error calling LLM for plan explanation")
 		return models.MealPlanPreparation{}, err
@@ -281,16 +283,24 @@ func (n *NutritionAgent) generateMealPlanShoppingListfromLLM(
 	}
 
 	// Format the foods from the plan
-	foodsStr := "Foods:\n"
+	foodsStr := ""
 	for _, food := range plan {
 		foodsStr += fmt.Sprintf("- %s\n", food.Food)
 	}
 
-	combinedInput := fmt.Sprintf("%s\n", foodsStr)
+	planMacrosStr := ""
+	for _, food := range plan {
+		planMacrosStr += fmt.Sprintf("- %s\n", food.Macros)
+	}
+
+	// Only if provided
+	userMacros := appendMacros(user)
 
 	promptTemplate := prompts.NewPromptTemplate(NewMealPlanShoppingListTemplate(), []string{"Input"})
 	promptInput := map[string]any{
-		"Input":        combinedInput,
+		"PlanFoods":    foodsStr,
+		"PlanMacros":   planMacrosStr,
+		"UserMacros":   userMacros,
 		"UserLanguage": user.Language,
 	}
 
@@ -304,7 +314,7 @@ func (n *NutritionAgent) generateMealPlanShoppingListfromLLM(
 
 	// Override the model we setup initially for a fast and more affordable option
 	// since answers are more structured and _easier_ to respond to.
-	output, err := n.llm.Call(ctxWithTimeout, prompt, llms.WithModel(string(LLMModelGemini)))
+	output, err := n.llm.Call(ctxWithTimeout, prompt, llms.WithModel(string(LLMModelGeminiTwoFlashLite)))
 	if err != nil {
 		log.Err(err).Msg("Error calling LLM for plan generation")
 		return []models.MealPlanShoppingList{}, err

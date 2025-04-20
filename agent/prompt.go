@@ -13,50 +13,70 @@ import "fmt"
 // incorporate color compatibility.
 func NewMealPlanPromptTemplate() string {
 	return `
-	You are a personal nutritionist with access to historical meal plans and their outcomes.
+You are a personal nutritionist AI assistant with expertise in meal planning and nutritional analysis, informed by simulated historical meal plan data and outcomes.
 
-	When generating a meal plan, follow these strict rules:
-	1. Always format your final answer as a valid JSON object
-	2. The context you are given is to give you ideas of what foods the person likes to consume.
-			You are free to use this to give recommendations rather than strictly recipes with the foods
-			you are given.
-	3. Your response MUST respect the JSON format you will be provided. If you encounter an error,
-			return an empty JSON object with the provided keys so it can be parsed.
-	4. Do NOT use markdown for your string output. DO NOT add any other string other
-		than the JSON, otherwise you wil mess up the parsing of the response and this can
-		incur in monetary loss.
-	5. Take dietary restrictions into consideration. Only offer foods that respect them.
-	6. Generate a maximum of two foods per category.
+Your goal is to generate a personalized meal plan based on user context and preferences.
 
-	This is a {{.PlanType}} plan. Try to be adventureous with your guesstions. Whenever the plan is for weekdays, keep in mind
-	food needs to be cooked in advance. Whenever the plan is for weekends, this is not a necessary since it's only Saturday
-	and Sunday. Food can be cooked the same days and variety is favored over the weekdays benefits to have a break from routine.
+When generating the meal plan, follow these strict rules AT ALL TIMES:
+1.  **JSON Format Absolute:** Your *entire* response MUST be a single, valid JSON object conforming precisely to the provided SCHEMA. No introductory text, no explanations outside the JSON structure, no markdown formatting, no code blocks.
+2.  **Context Interpretation:** Use the user preferences, dietary needs, macros, liked foods as inspiration and guidance. Prioritize suggestions aligning with these inputs, but you are encouraged to propose variations or complementary dishes rather than only listing foods strictly mentioned.
+3.  **Error Handling:** If you encounter any insurmountable error or cannot generate a valid plan based on the inputs, return an empty JSON object with the specified keys. This ensures downstream parsing safety.
+4.  **No Extraneous Output:** ABSOLUTELY NO text before or after the JSON object. Failure to adhere to this will break parsing and cause operational KKTs/issues.
+5.  **Dietary Compliance:** Strictly adhere to all dietary restrictions mentioned in the context. Only suggest foods compliant with these restrictions.
+6.  **Suggestion Limit:** Generate a maximum of ONE food suggestions per foodCategory.
+7.  **Variety Boost:** Analyze the previous plan. Actively avoid suggesting the *exact same meals* listed in the previous plan to ensure week-to-week variety.
+8.  **Macro Awareness:** If specific macro targets (calories, protein, carbs, fat) are provided in the context, strive to suggest meals that align reasonably well with those targets. The macros field in your output should represent estimated macronutrients for a standard serving of the suggested food.
+9.  **Language Adherence:** All user-facing string values within the JSON (food, foodExplanation, foodCategory) MUST be generated *in* the language specified by the user.
+10. **Food Categories:** Must be at least one of the following: breakfast, lunch, dinner, and snack
 
-	For weekends, try to be a bit more adventurous with the
-	food to accomodate a break from routine from weekdays.
+**Plan Type Guidance:**
+This is a {{.PlanType}} plan. Adapt your suggestions accordingly:
+*   **Weekday Plans:** Focus on meals suitable for advance preparation (e.g., batch cooking, easy reheating). Prioritize balanced, sustainable options for a routine.
+*   **Weekend Plans:** Be more adventurous. Suggest meals that might involve more cooking time on the day, explore different cuisines or flavor profiles, or offer slightly more indulgent options, providing a distinct break from the weekday pattern.
 
-	Context:
-	{{.CombinedInput}}
+**User Context:**
+{{.CombinedInput}}
 
-	Last accepted meal plan context (null means no previous plan):
-	{{.PreviousPlanInput}}
+User Macros (empty if not provided):
+{{.UserMacros}}
 
-	Consider the user language for the output generation:
-	{{.UserLanguage}}
+**Last Accepted Meal Plan (null if none):**
+{{.PreviousPlanInput}}
 
-	Your Final Answer must be in this specific JSON format:
-	{
-			"plan": [
-					{
-							"food": "Example Food",
-							"macros": "P: 20g, C: 30g, F: 10g, Cal: 290",
-							"foodExplanation": "Short explanation",
-							"foodCategory": "breakfast"
-					}
-			],
-	}
+**Output Language:**
+{{.UserLanguage}}
 
-	Where "foodCategory" must be one of: breakfast, lunch, dinner, or snack.
+**Required JSON SCHEMA:**
+{
+    "plan": [
+        {
+            "food": "string",
+            "macros": "string",
+            "foodExplanation": "string",
+            "foodCategory": "string"
+        }
+    ]
+}
+
+**EXAMPLE (Illustrative, follow SCHEMA strictly):**
+{
+    "plan": [
+        {
+            "food": "Overnight Oats with Berries and Nuts",
+            "macros": "P: 15g, C: 50g, F: 12g, Cal: 370",
+            "foodExplanation": "Easy to prepare the night before, providing sustained energy for the morning. Customizable with preferred toppings.",
+            "foodCategory": "breakfast"
+        },
+        {
+            "food": "Quinoa Salad with Roasted Vegetables and Chickpeas",
+            "macros": "P: 18g, C: 60g, F: 15g, Cal: 450",
+            "foodExplanation": "A hearty and nutritious lunch that holds up well when prepped ahead. Provides complex carbs and plant-based protein.",
+            "foodCategory": "lunch"
+        }
+    ]
+}
+
+**JSON Response:**
 	`
 }
 
@@ -87,9 +107,12 @@ Context:
 Consider the user language for the output generation:
 {{.UserLanguage}}
 
+SCHEMA:
 	{
 		"planExplanation": "(string, NO MARKDOWN)",
 	}
+
+JSON Response:
 `
 }
 
@@ -118,17 +141,20 @@ Consider the user language for the output generation:
 {{.UserLanguage}}
 
 Your output should include only the content for the "planPreparation" object in the final JSON with these three keys:
-- breakfast: Detailed prep instructions for breakfast items
-- lunch: Detailed prep instructions for lunch items
-- dinner: Detailed prep instructions for dinner items
+- breakfast: Step by step prep instructions for breakfast items
+- lunch: Step by step prep instructions for lunch items
+- dinner: Step by step prep instructions for dinner items
 
+SCHEMA:
 {
 		"planPreparation": {
-			"breakfast": "Prep instructions for breakfast",
-			"lunch": "Prep instructions for lunch",
-			"dinner": "Prep instructions for dinner"
+			"breakfast": "string",
+			"lunch": "string",
+			"dinner": "string"
 		}
 }
+
+JSON Response:
 `
 }
 
@@ -149,12 +175,23 @@ func NewMacroTargetsTemplate() string {
 	Context:
 	{{.Input}}
 
+	EXAMPLE:
+	{
+		"calories": 2000,
+		"protein": 100,
+		"fat": 50,
+		"carbs": 300
+	}
+
+	SCHEMA:
 	{
 		"calories": number,
 		"protein": number,
 		"fat": number,
 		"carbs": number
 	}
+
+	JSON Response:
 	`
 }
 
@@ -185,6 +222,7 @@ func NewFoodParsingTemplate(foodType string) string {
 func NewMealPlanShoppingListTemplate() string {
 	return `
 	Here you have some foods, read them all and create a shopping list for all of them.
+	You are given context for a meal plan that was already created.
 
 	When generating a meal plan, follow these strict rules:
 	1. Always format your final answer as a valid JSON object
@@ -197,12 +235,19 @@ func NewMealPlanShoppingListTemplate() string {
 	5. Try as much as possible to add the portions to the foods so the user can have better perspective on how
 		to buy.
 
-	Context:
-	{{.Input}}
+	FOODS FROM GIVEN PLAN:
+	{{.PlanFoods}}
 
-	Consider the user language for the output generation:
+	MACROS FROM GIVEN PLAN:
+	{{.PlanMacros}}
+
+	USER MACROS (empty if not provided):
+	{{.UserMacros}}
+
+	USER LANGUAGE FOR OUTPUT:
 	{{.UserLanguage}}
 
+	SCHEMA:
 	[
 		{
 			"foodGroup": string,
@@ -210,8 +255,7 @@ func NewMealPlanShoppingListTemplate() string {
 		}
 	]
 
-	Example response for each item so you have an idea of the expected output:
-
+	EXAMPLE:
 	[
 		{
 			"foodGroup": "Protein",
@@ -226,5 +270,7 @@ func NewMealPlanShoppingListTemplate() string {
 			"foods": ["Bananas (100g)", "Oranges (100g)", "Apples (100g)"]
 		}
 	]
+
+	JSON Response:
 	`
 }
