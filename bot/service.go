@@ -109,6 +109,12 @@ func (s *BotService) RegisterHandlers() {
 		NewStartCommandHandler(handlerDeps).Handle,
 	)
 
+	s.bot.RegisterHandler(tgbot.HandlerTypeMessageText,
+		"/support",
+		tgbot.MatchTypeExact,
+		NewSupportHandler(handlerDeps).Handle,
+	)
+
 	feedbackRequestHandler := NewMealPlanFeedbackHandler(handlerDeps)
 	paymentHandler := NewPaymentHandler(handlerDeps)
 

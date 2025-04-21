@@ -78,6 +78,7 @@ const (
 	KeyChangeLanguageButton           = "change_language_button"
 	KeyChangeLanguagePrompt           = "change_language_prompt"
 	KeyLanguageChanged                = "language_changed"
+	KeySupportText                    = "support_text"
 )
 
 var translations = map[string]map[database.UserLanguage]string{
@@ -372,6 +373,10 @@ Obtén un límite mayor de planes de comidas por semana y seguimientos programad
 	KeyLanguageChanged: {
 		database.UserLanguageEnglish: "Your language preference has been updated",
 		database.UserLanguageSpanish: "Tu preferencia de idioma ha sido actualizada",
+	},
+	KeySupportText: {
+		database.UserLanguageEnglish: "If you have any questions or need assistance, please reach out to our support team at support@rawplanbot.com. We're here to help!",
+		database.UserLanguageSpanish: "Si tienes alguna pregunta o necesitas ayuda, ponte en contacto con nuestro equipo de soporte en support@rawplanbot.com. Estamos aqui para ayudarte!",
 	},
 }
 
