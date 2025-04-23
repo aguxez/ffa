@@ -101,12 +101,12 @@ func InitialMenuMessageParams(chatID int64, user *database.User, numberOfCreated
 					CallbackData: string(CallbackDataChangeLanguage),
 				},
 			},
-			// {
-			// 	{
-			// 		Text:         i18n.GetText(i18n.KeyUpgradePremiumButton, userLang),
-			// 		CallbackData: string(CallbackDataMakePayment),
-			// 	},
-			// },
+			{
+				{
+					Text:         i18n.GetText(i18n.KeyUpgradePremiumButton, userLang),
+					CallbackData: string(CallbackDataMakePayment),
+				},
+			},
 		}
 	}
 
