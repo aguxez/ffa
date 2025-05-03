@@ -171,7 +171,7 @@ También puedes especificar solo algunos macros (p. ej., solo calorías). Todos 
 		database.UserLanguageSpanish: "Hubo un error al enviar tu documento. Esto ha sido informado.",
 	},
 	KeySetDietaryRestrictionsButton: {
-		database.UserLanguageEnglish: "Set dietary restrictions",
+		database.UserLanguageEnglish: "Dietary restrictions",
 		database.UserLanguageSpanish: "Restricciones dietéticas",
 	},
 	KeySetMacrosButton: {
