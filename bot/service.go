@@ -49,7 +49,7 @@ func NewBotService(stateManager *models.StateManager, db *database.Database, cfg
 	nutritionLlm, err := openai.New(
 		openai.WithBaseURL("https://openrouter.ai/api/v1"),
 		openai.WithToken(cfg.OpenRouterAPIKey),
-		openai.WithModel(string(agent.LLMModelGeminiTwoFlash)),
+		openai.WithModel(string(agent.LLMModelClaude)),
 	)
 	if err != nil {
 		log.Err(err).Msg("Failed to create LLM")
