@@ -91,7 +91,8 @@ func (h *PlanAcceptanceHandler) Handle(ctx context.Context, bot *tgbot.Bot, upda
 			return
 		}
 
-		return // Plan accepted, flow ends here
+		// Plan accepted, flow ends here
+		return
 	}
 
 	// Create a new plan for the user

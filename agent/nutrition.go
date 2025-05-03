@@ -159,7 +159,7 @@ func (n *NutritionAgent) generateMealPlanFromLLM(ctx context.Context,
 	defer cancel()
 
 	// Temperature is overridden to promote more diversity in answers for a given input
-	output, err := n.llm.Call(ctxWithTimeout, prompt, llms.WithTemperature(1.5))
+	output, err := n.llm.Call(ctxWithTimeout, prompt, llms.WithTemperature(1.7))
 	if err != nil {
 		log.Err(err).Msg("Error calling LLM for plan generation")
 		return models.MealPlan{}, err
