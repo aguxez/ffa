@@ -8,7 +8,7 @@ require (
 	github.com/Dadido3/go-typst v0.3.0
 	github.com/go-telegram/bot v1.14.0
 	github.com/joho/godotenv v1.5.1
-	github.com/mitchellh/mapstructure v1.5.0
+	github.com/robfig/cron v1.2.0
 	github.com/rs/zerolog v1.33.0
 	github.com/spf13/viper v1.20.1
 	github.com/tmc/langchaingo v0.1.12
@@ -45,7 +45,6 @@ require (
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pkoukk/tiktoken-go v0.1.6 // indirect
-	github.com/robfig/cron v1.2.0 // indirect
 	github.com/sagikazarmark/locafero v0.7.0 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
