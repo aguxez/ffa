@@ -58,14 +58,14 @@ func (n *NutritionAgent) GenerateMealPlan(ctx context.Context,
 		return models.CompleteMealPlan{}, err
 	}
 
-	// Then ask for a meal plan preparation
-	preparationResponse, err := n.generateMealPlanPreparationFromLLM(ctx, user, mealResponse, planType)
+	// Then create the shopping list for this plan
+	shoppingList, err := n.generateMealPlanShoppingListfromLLM(ctx, user, mealResponse.Plan)
 	if err != nil {
 		return models.CompleteMealPlan{}, err
 	}
 
-	// Then create the shopping list for this plan
-	shoppingList, err := n.generateMealPlanShoppingListfromLLM(ctx, user, mealResponse.Plan)
+	// Then ask for a meal plan preparation
+	preparationResponse, err := n.generateMealPlanPreparationFromLLM(ctx, user, mealResponse, shoppingList, planType)
 	if err != nil {
 		return models.CompleteMealPlan{}, err
 	}
@@ -141,13 +141,17 @@ func (n *NutritionAgent) generateMealPlanFromLLM(ctx context.Context,
 		previousPlanInput.WriteString(fmt.Sprintf("Was dinner liked: %t\n", lastMealPlan.IsDinnerLiked))
 	}
 
-	promptTemplate := prompts.NewPromptTemplate(NewMealPlanPromptTemplate(), []string{"CombinedInput"})
+	promptTemplate := prompts.NewPromptTemplate(
+		NewMealPlanPromptTemplate(),
+		[]string{"CombinedInput", "UserMacros", "PreviousPlanInput", "PlanType", "UserLanguage", "NumberOfAcceptedPlans"},
+	)
 	promptInput := map[string]any{
-		"CombinedInput":     combinedInput,
-		"UserMacros":        userMacros,
-		"PreviousPlanInput": previousPlanInput.String(),
-		"PlanType":          planType,
-		"UserLanguage":      user.Language,
+		"CombinedInput":         combinedInput,
+		"UserMacros":            userMacros,
+		"PreviousPlanInput":     previousPlanInput.String(),
+		"PlanType":              planType,
+		"UserLanguage":          user.Language,
+		"NumberOfAcceptedPlans": 25,
 	}
 
 	prompt, err := promptTemplate.Format(promptInput)
@@ -179,7 +183,10 @@ func (n *NutritionAgent) generateMealPlanExplanationFromLLM(
 ) (models.MealPlanExplanation, error) {
 	log.Debug().Msg("Generating meal plan explanation from LLM")
 
-	promptTemplate := prompts.NewPromptTemplate(NewMealPlanExplanationTemplate(), []string{"PlanFromChain1"})
+	promptTemplate := prompts.NewPromptTemplate(
+		NewMealPlanExplanationTemplate(),
+		[]string{"PlanFromChain1", "PlanType", "UserLanguage"},
+	)
 	promptInput := map[string]any{
 		"PlanFromChain1": mealPlan.Plan,
 		"PlanType":       planType,
@@ -212,15 +219,21 @@ func (n *NutritionAgent) generateMealPlanPreparationFromLLM(
 	ctx context.Context,
 	user *database.User,
 	mealPlan models.MealPlan,
+	shoppingList []models.MealPlanShoppingList,
 	planType database.PlanType,
 ) (models.MealPlanPreparation, error) {
 	log.Debug().Msg("Generating meal plan preparation from LLM")
 
-	promptTemplate := prompts.NewPromptTemplate(NewMealPlanPreparationTemplate(), []string{"PlanFromChain1"})
+	promptTemplate := prompts.NewPromptTemplate(
+		NewMealPlanPreparationTemplate(),
+		[]string{"PlanFromChain1", "ShoppingList", "PlanType", "UserLanguage", "NumberOfAcceptedPlans"},
+	)
 	promptInput := map[string]any{
-		"PlanFromChain1": mealPlan.Plan,
-		"PlanType":       planType,
-		"UserLanguage":   user.Language,
+		"PlanFromChain1":        mealPlan.Plan,
+		"PlanType":              planType,
+		"UserLanguage":          user.Language,
+		"ShoppingList":          shoppingList,
+		"NumberOfAcceptedPlans": 25,
 	}
 
 	prompt, err := promptTemplate.Format(promptInput)
@@ -296,12 +309,16 @@ func (n *NutritionAgent) generateMealPlanShoppingListfromLLM(
 	// Only if provided
 	userMacros := appendMacros(user)
 
-	promptTemplate := prompts.NewPromptTemplate(NewMealPlanShoppingListTemplate(), []string{"Input"})
+	promptTemplate := prompts.NewPromptTemplate(
+		NewMealPlanShoppingListTemplate(),
+		[]string{"PlanFoods", "PlanMacros", "UserMacros", "UserLanguage"},
+	)
 	promptInput := map[string]any{
-		"PlanFoods":    foodsStr,
-		"PlanMacros":   planMacrosStr,
-		"UserMacros":   userMacros,
-		"UserLanguage": user.Language,
+		"PlanFoods":             foodsStr,
+		"PlanMacros":            planMacrosStr,
+		"UserMacros":            userMacros,
+		"UserLanguage":          user.Language,
+		"NumberOfAcceptedPlans": 25,
 	}
 
 	prompt, err := promptTemplate.Format(promptInput)
