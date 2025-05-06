@@ -44,10 +44,11 @@ func NewNutritionAgent(llm *openai.LLM, state *models.StateManager) *NutritionAg
 func (n *NutritionAgent) GenerateMealPlan(ctx context.Context,
 	user *database.User,
 	lastMealPlan *database.UserMealPlan,
+	numberOfAcceptedPlans int64,
 	planType database.PlanType,
 ) (models.CompleteMealPlan, error) {
 	// First ask for a meal plan
-	mealResponse, err := n.generateMealPlanFromLLM(ctx, user, lastMealPlan, planType)
+	mealResponse, err := n.generateMealPlanFromLLM(ctx, user, lastMealPlan, numberOfAcceptedPlans, planType)
 	if err != nil {
 		return models.CompleteMealPlan{}, err
 	}
@@ -59,13 +60,25 @@ func (n *NutritionAgent) GenerateMealPlan(ctx context.Context,
 	}
 
 	// Then create the shopping list for this plan
-	shoppingList, err := n.generateMealPlanShoppingListfromLLM(ctx, user, mealResponse.Plan)
+	shoppingList, err := n.generateMealPlanShoppingListfromLLM(
+		ctx,
+		user,
+		mealResponse.Plan,
+		numberOfAcceptedPlans,
+	)
 	if err != nil {
 		return models.CompleteMealPlan{}, err
 	}
 
 	// Then ask for a meal plan preparation
-	preparationResponse, err := n.generateMealPlanPreparationFromLLM(ctx, user, mealResponse, shoppingList, planType)
+	preparationResponse, err := n.generateMealPlanPreparationFromLLM(
+		ctx,
+		user,
+		mealResponse,
+		shoppingList,
+		planType,
+		numberOfAcceptedPlans,
+	)
 	if err != nil {
 		return models.CompleteMealPlan{}, err
 	}
@@ -87,6 +100,7 @@ func (n *NutritionAgent) GenerateMealPlan(ctx context.Context,
 func (n *NutritionAgent) generateMealPlanFromLLM(ctx context.Context,
 	user *database.User,
 	lastMealPlan *database.UserMealPlan,
+	numberOfAcceptedPlans int64,
 	planType database.PlanType,
 ) (models.MealPlan, error) {
 	log.Debug().Msg("Generating meal plan from LLM")
@@ -151,7 +165,7 @@ func (n *NutritionAgent) generateMealPlanFromLLM(ctx context.Context,
 		"PreviousPlanInput":     previousPlanInput.String(),
 		"PlanType":              planType,
 		"UserLanguage":          user.Language,
-		"NumberOfAcceptedPlans": 25,
+		"NumberOfAcceptedPlans": numberOfAcceptedPlans,
 	}
 
 	prompt, err := promptTemplate.Format(promptInput)
@@ -221,6 +235,7 @@ func (n *NutritionAgent) generateMealPlanPreparationFromLLM(
 	mealPlan models.MealPlan,
 	shoppingList []models.MealPlanShoppingList,
 	planType database.PlanType,
+	numberOfAcceptedPlans int64,
 ) (models.MealPlanPreparation, error) {
 	log.Debug().Msg("Generating meal plan preparation from LLM")
 
@@ -233,7 +248,7 @@ func (n *NutritionAgent) generateMealPlanPreparationFromLLM(
 		"PlanType":              planType,
 		"UserLanguage":          user.Language,
 		"ShoppingList":          shoppingList,
-		"NumberOfAcceptedPlans": 25,
+		"NumberOfAcceptedPlans": numberOfAcceptedPlans,
 	}
 
 	prompt, err := promptTemplate.Format(promptInput)
@@ -289,6 +304,7 @@ func (n *NutritionAgent) generateMealPlanShoppingListfromLLM(
 	ctx context.Context,
 	user *database.User,
 	plan []models.MealPlanFood,
+	numberOfAcceptedPlans int64,
 ) ([]models.MealPlanShoppingList, error) {
 	log.Debug().Msg("Creating meal plan shopping list")
 	if len(plan) == 0 {
@@ -318,7 +334,7 @@ func (n *NutritionAgent) generateMealPlanShoppingListfromLLM(
 		"PlanMacros":            planMacrosStr,
 		"UserMacros":            userMacros,
 		"UserLanguage":          user.Language,
-		"NumberOfAcceptedPlans": 25,
+		"NumberOfAcceptedPlans": numberOfAcceptedPlans,
 	}
 
 	prompt, err := promptTemplate.Format(promptInput)
