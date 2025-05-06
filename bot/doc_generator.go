@@ -115,7 +115,7 @@ func GenerateDocFromMealPlan(mealPlan models.CompleteMealPlan, userLanguage data
 			columns: (auto, auto, auto),
 			align: horizon,
 			table.header(
-				[*Food*], [*Macros*], [*Explanation*]
+				[*{{.TableHeaderFood}}*], [*{{.TableHeaderMacros}}*], [*{{.TableHeaderExplanation}}*]
 			),
 			{{.Breakfast}}
 		)
@@ -124,7 +124,7 @@ func GenerateDocFromMealPlan(mealPlan models.CompleteMealPlan, userLanguage data
 			columns: (auto, auto, auto),
 			align: horizon,
 			table.header(
-				[*Food*], [*Macros*], [*Explanation*]
+				[*{{.TableHeaderFood}}*], [*{{.TableHeaderMacros}}*], [*{{.TableHeaderExplanation}}*]
 			),
 			{{.Lunch}}
 		)
@@ -133,7 +133,7 @@ func GenerateDocFromMealPlan(mealPlan models.CompleteMealPlan, userLanguage data
 			columns: (auto, auto, auto),
 			align: horizon,
 			table.header(
-				[*Food*], [*Macros*], [*Explanation*]
+				[*{{.TableHeaderFood}}*], [*{{.TableHeaderMacros}}*], [*{{.TableHeaderExplanation}}*]
 			),
 			{{.Dinner}}
 		)
@@ -142,19 +142,20 @@ func GenerateDocFromMealPlan(mealPlan models.CompleteMealPlan, userLanguage data
 			columns: (auto, auto, auto),
 			align: horizon,
 			table.header(
-				[*Food*], [*Macros*], [*Explanation*]
+				[*{{.TableHeaderFood}}*], [*{{.TableHeaderMacros}}*], [*{{.TableHeaderExplanation}}*]
 			),
 			{{.Snack}}
 		)
     == {{.PreparationTitle}}
-    === {{.BreakfastTitle}}
-		{{.BreakfastPrep}}
-		=== {{.LunchTitle}}
-		{{.LunchPrep}}
-		=== {{.DinnerTitle}}
-		{{.DinnerPrep}}
-		== {{.ShoppingListTitle}}
-		{{.ShoppingList}}
+=== {{.BreakfastTitle}}
+{{.BreakfastPrep}}
+=== {{.LunchTitle}}
+{{.LunchPrep}}
+=== {{.DinnerTitle}}
+{{.DinnerPrep}}
+
+== {{.ShoppingListTitle}}
+{{.ShoppingList}}
 	`
 
 	// Create and parse the template
@@ -166,21 +167,24 @@ func GenerateDocFromMealPlan(mealPlan models.CompleteMealPlan, userLanguage data
 
 	// Define the data to populate the template
 	data := struct {
-		PlanExplanation   string
-		Breakfast         string
-		Lunch             string
-		Dinner            string
-		Snack             string
-		BreakfastPrep     string
-		LunchPrep         string
-		DinnerPrep        string
-		ShoppingList      string
-		BreakfastTitle    string
-		LunchTitle        string
-		DinnerTitle       string
-		SnackTitle        string
-		PreparationTitle  string
-		ShoppingListTitle string
+		PlanExplanation        string
+		Breakfast              string
+		Lunch                  string
+		Dinner                 string
+		Snack                  string
+		BreakfastPrep          string
+		LunchPrep              string
+		DinnerPrep             string
+		ShoppingList           string
+		BreakfastTitle         string
+		LunchTitle             string
+		DinnerTitle            string
+		SnackTitle             string
+		PreparationTitle       string
+		ShoppingListTitle      string
+		TableHeaderFood        string
+		TableHeaderMacros      string
+		TableHeaderExplanation string
 	}{
 		PlanExplanation:   mealPlan.PlanExplanation,
 		Breakfast:         planByCategory["breakfast"],
@@ -197,6 +201,11 @@ func GenerateDocFromMealPlan(mealPlan models.CompleteMealPlan, userLanguage data
 		SnackTitle:        i18n.GetText(i18n.KeyMealPlanDocumentSnack, userLanguage),
 		PreparationTitle:  i18n.GetText(i18n.KeyMealPlanDocumentPreparation, userLanguage),
 		ShoppingListTitle: i18n.GetText(i18n.KeyMealPlanDocumentShoppingList, userLanguage),
+		TableHeaderFood:   i18n.GetText(i18n.KeyMealPlanDocumentTableHeaderFood, userLanguage),
+		TableHeaderMacros: i18n.GetText(i18n.KeyMealPlanDocumentTableHeaderMacros, userLanguage),
+		TableHeaderExplanation: i18n.GetText(
+			i18n.KeyMealPlanDocumentTableHeaderExplanation,
+			userLanguage),
 	}
 
 	// Execute the template and write it to a buffer
