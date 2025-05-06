@@ -2,6 +2,12 @@ package agent
 
 import "fmt"
 
+const (
+	BeginnerNumberOfAcceptedPlans     = 11
+	IntermediateNumberOfAcceptedPlans = 12
+	AdvancedNumberOfAcceptedPlans     = 20
+)
+
 // NewMealPlanPromptTemplate returns a string template for generating meal plans using a conversational agent.
 // The template provides a structured format for the agent to follow when interacting with users
 // as a personal nutritionist. It leverages historical meal plans and tool access to generate
@@ -12,7 +18,7 @@ import "fmt"
 // breakdowns. The response must be terminal-displayable, with explanations and preparations that
 // incorporate color compatibility.
 func NewMealPlanPromptTemplate() string {
-	return `
+	return fmt.Sprintf(`
 You are a personal nutritionist AI assistant with expertise in meal planning and nutritional analysis, informed by simulated historical meal plan data and outcomes.
 
 Your goal is to generate a personalized meal plan based on user context and preferences.
@@ -34,10 +40,19 @@ This is a {{.PlanType}} plan. Adapt your suggestions accordingly:
 *   **Weekday Plans:** Focus on meals suitable for advance preparation (e.g., batch cooking, easy reheating). Prioritize balanced, sustainable options for a routine.
 *   **Weekend Plans:** Be more adventurous. Suggest meals that might involve more cooking time on the day, explore different cuisines or flavor profiles, or offer slightly more indulgent options, providing a distinct break from the weekday pattern.
 
+**Difficulty Guidance:**
+Consider the fact this user has completed {{.NumberOfAcceptedPlans}} meal plans.
+We want to ensure the user improves their cooking skills by considering different
+levels of cooking based on the number of accepted plans which translates to cooked meals in a week.
+
+*   **Beginner:** Focus on simple, quick, and easy meals. Until %d accepted plans
+*   **Intermediate:** Focus on more complex, longer, and more involved meals. At least %d accepted plans
+*   **Advanced:** Focus on more complex, longer, and more involved meals. At least %d accepted plans
+
 **User Context:**
 {{.CombinedInput}}
 
-User Macros (empty if not provided):
+**User Macros (empty if not provided):**
 {{.UserMacros}}
 
 **Last Accepted Meal Plan (null if none):**
@@ -77,7 +92,7 @@ User Macros (empty if not provided):
 }
 
 **JSON Response:**
-	`
+	`, BeginnerNumberOfAcceptedPlans, IntermediateNumberOfAcceptedPlans, AdvancedNumberOfAcceptedPlans)
 }
 
 // NewMealPlanExplanationTemplate returns a string representing a template for a prompt
@@ -119,7 +134,7 @@ JSON Response:
 // NewMealPlanPreparationTemplate returns a string representing a template for a prompt
 // given to the LLM for generating meal preparation instructions from a list of foods.
 func NewMealPlanPreparationTemplate() string {
-	return `
+	return fmt.Sprintf(`
 You are a personal nutritionist specializing in meal prep. Based on the following meal plan items, create practical preparation instructions organized by meal type.
 
 	When generating a meal plan, follow these strict rules:
@@ -133,6 +148,22 @@ You are a personal nutritionist specializing in meal prep. Based on the followin
 	storage recommendations, and how to maintain freshness throughout the week. For weekends,
 	keep it simple and easy to prepare, no need to focus on storage since we're not cooking
 	food in advance.
+
+**Difficulty Guidance:**
+Consider the fact this user has completed {{.NumberOfAcceptedPlans}} meal plans.
+We want to ensure the user improves their cooking skills by considering different
+levels of cooking based on the number of accepted plans which translates to cooked meals in a week.
+
+*   **Beginner:** Until %d	 accepted plans
+*   **Intermediate:** At least %d accepted plans
+*   **Advanced:** At least %d accepted plans
+
+Ensure preparation steps align with the user's cooking experience level defined here.
+
+**Meal Plan Shopping List::**
+Here is the shopping list we have given the user, so, ensure your preparation steps
+only focus on the items in the shopping list:
+{{.ShoppingList}}
 
 Meal Plan Items:
 {{.PlanFromChain1}}
@@ -154,8 +185,17 @@ SCHEMA:
 		}
 }
 
+EXAMPLE:
+{
+	"planPreparation": {
+		"breakfast": "Protein-Packed Chicken and Vegetable Breakfast Skillet: (Intermediate)\n1. Dice chicken breast into bite-sized pieces.\n2. Chop bell peppers and onions.\n3. Sauté chicken in a pan until cooked through.\n4. Add bell peppers and onions, cook until softened.\n5. Stir in spinach until wilted.\n6. Portion into containers for the week.\n7. Reheat in the microwave or on the stovetop each morning.",
+		"lunch": "Mediterranean Chicken Wrap with Hummus: (Beginner) \n1. Grill or cook chicken breast. \n2. Prepare hummus. \n3. Wash and chop cucumber and tomato. \n4. Assemble wraps each morning by spreading hummus on a whole-grain wrap, adding mixed greens, chicken, cucumber, and tomato. \n5. Wrap tightly.",
+		"dinner": "Herb-Crusted Baked Chicken with Sweet Potato and Broccoli: (Intermediate) \n1. Preheat oven to 400°F (200°C). \n2. Toss sweet potato cubes with olive oil, salt, and pepper. Roast for 20 minutes. \n3. Prepare chicken by coating with herb and panko mixture. \n4. Place chicken on a baking sheet with sweet potatoes. \n5. Bake chicken and sweet potatoes for 20-25 minutes, or until chicken is cooked through and sweet potatoes are tender. \n6. Steam broccoli. \n7. Portion chicken, sweet potatoes, and broccoli into containers for the week."
+	}
+}
+
 JSON Response:
-`
+`, BeginnerNumberOfAcceptedPlans, IntermediateNumberOfAcceptedPlans, AdvancedNumberOfAcceptedPlans)
 }
 
 // NewMacroTargetsTemplate returns a string representing a template for a prompt
@@ -220,7 +260,7 @@ func NewFoodParsingTemplate(foodType string) string {
 // NewMealPlanShoppingListTemplate returns a string representing a template for a prompt
 // given to the LLM for generating a shopping list from a list of foods.
 func NewMealPlanShoppingListTemplate() string {
-	return `
+	return fmt.Sprintf(`
 	Here you have some foods, read them all and create a shopping list for all of them.
 	You are given context for a meal plan that was already created.
 
@@ -234,6 +274,16 @@ func NewMealPlanShoppingListTemplate() string {
 	4. Take the user macros into consideration (if they're available in the input) when suggesting food portions
 	5. Try as much as possible to add the portions to the foods so the user can have better perspective on how
 		to buy.
+
+
+	**Difficulty Guidance:**
+	Consider the fact this user has completed {{.NumberOfAcceptedPlans}} meal plans.
+	We want to ensure the user improves their cooking skills by considering different
+	levels of cooking based on the number of accepted plans which translates to cooked meals in a week.
+
+	*   **Beginner:** Focus on simple, quick, and easy meals. Until %d accepted plans
+	*   **Intermediate:** Focus on more complex, longer, and more involved meals. At least %d accepted plans
+	*   **Advanced:** Focus on more complex, longer, and more involved meals. At least %d accepted plans
 
 	FOODS FROM GIVEN PLAN:
 	{{.PlanFoods}}
@@ -272,5 +322,5 @@ func NewMealPlanShoppingListTemplate() string {
 	]
 
 	JSON Response:
-	`
+	`, BeginnerNumberOfAcceptedPlans, IntermediateNumberOfAcceptedPlans, AdvancedNumberOfAcceptedPlans)
 }

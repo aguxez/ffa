@@ -139,8 +139,21 @@ func (h *MealPlanHandler) generatePlan(ctx context.Context, bot *tgbot.Bot, upda
 		return
 	}
 
+	numberOfAcceptedPlans, err := h.deps.DB.GetCountOfAcceptedPlans(userID)
+	if err != nil {
+		logger.Err(err).Msg("Error getting count of accepted user plans")
+		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorRetrieveUserData, userLang))
+		return
+	}
+
 	// Generate meal plan
-	plan, err := h.deps.NutritionAgent.GenerateMealPlan(ctx, user, lastAcceptedMealPlan, h.planType)
+	plan, err := h.deps.NutritionAgent.GenerateMealPlan(
+		ctx,
+		user,
+		lastAcceptedMealPlan,
+		numberOfAcceptedPlans,
+		h.planType,
+	)
 	if err != nil {
 		logger.Err(err).Msg("Error generating meal plan")
 		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorGeneratePlan, userLang))
