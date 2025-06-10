@@ -146,8 +146,8 @@ También puedes especificar solo algunos macros (p. ej., solo calorías). Todos 
 		database.UserLanguageSpanish: "Estoy generando un plan para ti. Esto puede tardar un minuto.",
 	},
 	KeyErrorGetLastPlan: {
-		database.UserLanguageEnglish: "There was an error getting your last accepted meal plan. This has been informed.",
-		database.UserLanguageSpanish: "Hubo un error al obtener tu último plan de comidas aceptado. Esto ha sido informado.",
+		database.UserLanguageEnglish: "There was an error getting your last meal plan. This has been informed.",
+		database.UserLanguageSpanish: "Hubo un error al obtener tu último plan de comidas. Esto ha sido informado.",
 	},
 	KeyErrorGeneratePlan: {
 		database.UserLanguageEnglish: "There was an error generating the meal plan. This has been informed.",

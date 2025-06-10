@@ -56,7 +56,10 @@ levels of cooking based on the number of accepted plans which translates to cook
 {{.UserMacros}}
 
 **Last Accepted Meal Plan (null if none):**
-{{.PreviousPlanInput}}
+{{.LastAcceptedPlanInput}}
+
+** Last Rejected Meal Plan (null if none) - Try to offer alternatives to these:**
+{{.LastRejectedPlanInput}}
 
 **Output Language:**
 {{.UserLanguage}}

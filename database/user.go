@@ -64,7 +64,8 @@ type UserDietaryRestriction struct {
 	Name   string `gorm:"uniqueIndex:user_dietary_restrictions_user_id_name_idx;not null"`
 }
 
-// UserMealPlan represents a meal plan of a user (usually accepted plans)
+// UserMealPlan represents a meal plan of a user. It can be either accepted or rejected
+// and we can deduce that based on the relevant columns
 type UserMealPlan struct {
 	gorm.Model
 
@@ -79,6 +80,7 @@ type UserMealPlan struct {
 	PlanType         PlanType `gorm:"type:varchar(10);not null;default:weekdays;index"`
 
 	AcceptedAt time.Time `gorm:"index;default:NULL"`
+	RejectedAt time.Time `gorm:"index;default:NULL"`
 }
 
 type UserMealPlanFood struct {

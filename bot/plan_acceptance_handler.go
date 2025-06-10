@@ -49,15 +49,16 @@ func (h *PlanAcceptanceHandler) Handle(ctx context.Context, bot *tgbot.Bot, upda
 	// Reset user state
 	h.deps.StateManager.SetUserState(userID, models.ConversationStageNull)
 
+	// Update the plan acceptance in the database
+	if err := h.deps.DB.UpdateUserPlanAcceptance(userID, messageID, h.isPlanAccepted); err != nil {
+		logger.Err(err).Msg("Error accepting plan")
+		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorResponseGeneric, userLang))
+		return
+	}
+
 	// If the user approved the plan, we want to save it in the database for further
 	// feedback down the line
 	if h.isPlanAccepted {
-		if err := h.deps.DB.AcceptUserMealPlan(userID, messageID); err != nil {
-			logger.Err(err).Msg("Error accepting plan")
-			ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorResponseGeneric, userLang))
-			return
-		}
-
 		// Remove markup from previous message
 		_, err = bot.EditMessageReplyMarkup(ctx, &tgbot.EditMessageReplyMarkupParams{
 			ChatID:    chatID,

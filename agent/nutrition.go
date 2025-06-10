@@ -43,12 +43,20 @@ func NewNutritionAgent(llm *openai.LLM, state *models.StateManager) *NutritionAg
 // to have a non-empty list of preferred foods and a non-nil weight.
 func (n *NutritionAgent) GenerateMealPlan(ctx context.Context,
 	user *database.User,
-	lastMealPlan *database.UserMealPlan,
+	lastAcceptedMealPlan *database.UserMealPlan,
+	lastRejectedMealPlan *database.UserMealPlan,
 	numberOfAcceptedPlans int64,
 	planType database.PlanType,
 ) (models.CompleteMealPlan, error) {
 	// First ask for a meal plan
-	mealResponse, err := n.generateMealPlanFromLLM(ctx, user, lastMealPlan, numberOfAcceptedPlans, planType)
+	mealResponse, err := n.generateMealPlanFromLLM(
+		ctx,
+		user,
+		lastAcceptedMealPlan,
+		lastRejectedMealPlan,
+		numberOfAcceptedPlans,
+		planType,
+	)
 	if err != nil {
 		return models.CompleteMealPlan{}, err
 	}
@@ -99,7 +107,8 @@ func (n *NutritionAgent) GenerateMealPlan(ctx context.Context,
 // The function will return an error if there was an issue with the LLM call or unmarshalling the response.
 func (n *NutritionAgent) generateMealPlanFromLLM(ctx context.Context,
 	user *database.User,
-	lastMealPlan *database.UserMealPlan,
+	lastAcceptedMealPlan *database.UserMealPlan,
+	lastRejectedMealPlan *database.UserMealPlan,
 	numberOfAcceptedPlans int64,
 	planType database.PlanType,
 ) (models.MealPlan, error) {
@@ -143,29 +152,42 @@ func (n *NutritionAgent) generateMealPlanFromLLM(ctx context.Context,
 		planDurationDays,
 	)
 
-	var previousPlanInput strings.Builder
-	if lastMealPlan != nil {
-		previousPlanInput.WriteString("Previous Plan:\n")
-		for _, meal := range lastMealPlan.Foods {
-			previousPlanInput.WriteString(fmt.Sprintf("- %s (category: %s)\n", meal.Name, meal.Category))
+	var lastAcceptedPlanInput strings.Builder
+	if lastAcceptedMealPlan != nil {
+		lastAcceptedPlanInput.WriteString("Previous Plan:\n")
+		for _, meal := range lastAcceptedMealPlan.Foods {
+			lastAcceptedPlanInput.WriteString(fmt.Sprintf("- %s (category: %s)\n", meal.Name, meal.Category))
 		}
 
-		previousPlanInput.WriteString(fmt.Sprintf("Was breakfast liked: %t\n", lastMealPlan.IsBreakfastLiked))
-		previousPlanInput.WriteString(fmt.Sprintf("Was lunch liked: %t\n", lastMealPlan.IsLunchLiked))
-		previousPlanInput.WriteString(fmt.Sprintf("Was dinner liked: %t\n", lastMealPlan.IsDinnerLiked))
+		lastAcceptedPlanInput.WriteString(fmt.Sprintf("Was breakfast liked: %t\n", lastAcceptedMealPlan.IsBreakfastLiked))
+		lastAcceptedPlanInput.WriteString(fmt.Sprintf("Was lunch liked: %t\n", lastAcceptedMealPlan.IsLunchLiked))
+		lastAcceptedPlanInput.WriteString(fmt.Sprintf("Was dinner liked: %t\n", lastAcceptedMealPlan.IsDinnerLiked))
+	}
+
+	var lastRejectedPlanInput strings.Builder
+	if lastRejectedMealPlan != nil {
+		lastRejectedPlanInput.WriteString("Previous Plan:\n")
+		for _, meal := range lastAcceptedMealPlan.Foods {
+			lastRejectedPlanInput.WriteString(fmt.Sprintf("- %s (category: %s)\n", meal.Name, meal.Category))
+		}
+
+		lastRejectedPlanInput.WriteString(fmt.Sprintf("Was breakfast liked: %t\n", lastAcceptedMealPlan.IsBreakfastLiked))
+		lastRejectedPlanInput.WriteString(fmt.Sprintf("Was lunch liked: %t\n", lastAcceptedMealPlan.IsLunchLiked))
+		lastRejectedPlanInput.WriteString(fmt.Sprintf("Was dinner liked: %t\n", lastAcceptedMealPlan.IsDinnerLiked))
 	}
 
 	promptTemplate := prompts.NewPromptTemplate(
 		NewMealPlanPromptTemplate(),
-		[]string{"CombinedInput", "UserMacros", "PreviousPlanInput", "PlanType", "UserLanguage", "NumberOfAcceptedPlans"},
+		[]string{"CombinedInput", "UserMacros", "LastAcceptedPlanInput", "PlanType", "UserLanguage", "NumberOfAcceptedPlans", "LastRejectedPlanInput"},
 	)
 	promptInput := map[string]any{
 		"CombinedInput":         combinedInput,
 		"UserMacros":            userMacros,
-		"PreviousPlanInput":     previousPlanInput.String(),
+		"LastAcceptedPlanInput": lastAcceptedPlanInput.String(),
 		"PlanType":              planType,
 		"UserLanguage":          user.Language,
 		"NumberOfAcceptedPlans": numberOfAcceptedPlans,
+		"LastRejectedPlanInput": lastRejectedPlanInput.String(),
 	}
 
 	prompt, err := promptTemplate.Format(promptInput)

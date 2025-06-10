@@ -132,9 +132,16 @@ func (h *MealPlanHandler) generatePlan(ctx context.Context, bot *tgbot.Bot, upda
 	}
 
 	// Get last accepted meal plan
-	lastAcceptedMealPlan, err := h.deps.DB.GetUserLastAcceptedMealPlan(userID, database.PlanTypeWeekdays)
+	lastAcceptedMealPlan, err := h.deps.DB.GetUserLastMealPlan(userID, database.PlanTypeWeekdays, true)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		logger.Err(err).Msg("Error getting last accepted meal plan")
+		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorGetLastPlan, userLang))
+		return
+	}
+
+	lastRejectedMealPlan, err := h.deps.DB.GetUserLastMealPlan(userID, database.PlanTypeWeekdays, false)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		logger.Err(err).Msg("Error getting last rejected meal plan")
 		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorGetLastPlan, userLang))
 		return
 	}
@@ -151,6 +158,7 @@ func (h *MealPlanHandler) generatePlan(ctx context.Context, bot *tgbot.Bot, upda
 		ctx,
 		user,
 		lastAcceptedMealPlan,
+		lastRejectedMealPlan,
 		numberOfAcceptedPlans,
 		h.planType,
 	)

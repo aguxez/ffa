@@ -7,29 +7,41 @@ import (
 	"gorm.io/gorm"
 )
 
-// AcceptUserMealPlan accepts a user meal plan and updates the user's next
-// meal plan feedback request time two days from now.
+// UpdateUserPlanAcceptance updates the acceptance status of a user's meal plan.
+// The function deduces which column to updated based on whether the plan was accepted
+// or rejected.
 //
 // It takes a user ID and a message ID as parameters and returns an error if there was
 // an issue with the database call.
-func (db *Database) AcceptUserMealPlan(userID uint, messageID int) error {
+func (db *Database) UpdateUserPlanAcceptance(userID uint, messageID int, isMealPlanAccepted bool) error {
 	// Add two days to current time
 	nextTimeForFeedbackRequest := getTimeToAskForFeedback(db.Config)
+	var columnToUpdate string
+
+	if isMealPlanAccepted {
+		columnToUpdate = "accepted_at"
+	} else {
+		columnToUpdate = "rejected_at"
+	}
 
 	return db.Conn.Transaction(func(tx *gorm.DB) error {
 		// Update the user meal plan
 		err := tx.Model(&UserMealPlan{}).
 			Where("user_id = ?", userID).
 			Where("message_id = ?", messageID).
-			Update("accepted_at", time.Now()).Error
+			Update(columnToUpdate, time.Now()).Error
 		if err != nil {
 			return err
 		}
 
 		// Update the next time we have to ask the user for feedback on this plan
-		return tx.Model(&User{}).
-			Where("id = ?", userID).
-			Update("next_meal_plan_feedback_request_time", nextTimeForFeedbackRequest).Error
+		if isMealPlanAccepted {
+			return tx.Model(&User{}).
+				Where("id = ?", userID).
+				Update("next_meal_plan_feedback_request_time", nextTimeForFeedbackRequest).Error
+		}
+
+		return nil
 	})
 }
 
