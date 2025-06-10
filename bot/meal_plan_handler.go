@@ -116,115 +116,185 @@ func (h *MealPlanHandler) handleWeekendPlanGeneration(ctx context.Context,
 
 // generatePlan generates the actual meal plan
 func (h *MealPlanHandler) generatePlan(ctx context.Context, bot *tgbot.Bot, update *tgmodels.Update, user *database.User, userLang database.UserLanguage) {
-	chatID := update.CallbackQuery.Message.Message.Chat.ID
-	userID := uint(update.CallbackQuery.From.ID)
+	gc := &GenerationContext{
+		Ctx:      ctx,
+		Bot:      bot,
+		Update:   update,
+		User:     user,
+		UserLang: userLang,
+		Logger:   log.With().Uint("userID", user.ID).Logger(),
+	}
 
-	logger := log.
-		With().
-		Uint("userID", userID).
-		Logger()
-
-	// Remove the markup button
-	if err := h.removeMarkupOrDeleteMessage(ctx, bot, update, userLang); err != nil { // Pass language
-		logger.Err(err).Msg("Error removing markup")
-		// Don't send error response here, as message might be deleted or already edited
+	if err := h.cleanupPreviousMessage(gc); err != nil {
 		return
 	}
 
-	// Get last accepted meal plan
-	lastAcceptedMealPlan, err := h.deps.DB.GetUserLastMealPlan(userID, database.PlanTypeWeekdays, true)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		logger.Err(err).Msg("Error getting last accepted meal plan")
-		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorGetLastPlan, userLang))
-		return
-	}
-
-	lastRejectedMealPlan, err := h.deps.DB.GetUserLastMealPlan(userID, database.PlanTypeWeekdays, false)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		logger.Err(err).Msg("Error getting last rejected meal plan")
-		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorGetLastPlan, userLang))
-		return
-	}
-
-	numberOfAcceptedPlans, err := h.deps.DB.GetCountOfAcceptedPlans(userID)
+	planData, err := h.preparePlanData(gc)
 	if err != nil {
-		logger.Err(err).Msg("Error getting count of accepted user plans")
-		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorRetrieveUserData, userLang))
+		h.handlePlanError(gc, err)
 		return
 	}
 
-	// Generate meal plan
-	plan, err := h.deps.NutritionAgent.GenerateMealPlan(
-		ctx,
-		user,
-		lastAcceptedMealPlan,
-		lastRejectedMealPlan,
-		numberOfAcceptedPlans,
+	if err := h.sendAndPersistPlan(planData); err != nil {
+		h.handlePlanError(gc, err)
+	}
+}
+
+// GenerationContext bundles common execution parameters
+type GenerationContext struct {
+	Ctx      context.Context
+	Bot      *tgbot.Bot
+	Update   *tgmodels.Update
+	User     *database.User
+	UserLang database.UserLanguage
+	Logger   zerolog.Logger
+}
+
+// PlanData contains meal plan generation parameters
+type PlanData struct {
+	LastAccepted  *database.UserMealPlan
+	LastRejected  *database.UserMealPlan
+	AcceptedCount int64
+	*GenerationContext
+}
+
+func (h *MealPlanHandler) cleanupPreviousMessage(gc *GenerationContext) error {
+	if err := h.removeMarkupOrDeleteMessage(gc.Ctx, gc.Bot, gc.Update, gc.UserLang); err != nil {
+		gc.Logger.Err(err).Msg("Message cleanup failed")
+		return err
+	}
+	return nil
+}
+
+func (h *MealPlanHandler) preparePlanData(gc *GenerationContext) (*PlanData, error) {
+	lastAccepted, lastRejected, err := h.getPreviousPlans(gc.User.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get previous plans: %w", err)
+	}
+
+	acceptedCount, err := h.deps.DB.GetCountOfAcceptedPlans(gc.User.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get accepted plans count: %w", err)
+	}
+
+	return &PlanData{
+		LastAccepted:      lastAccepted,
+		LastRejected:      lastRejected,
+		AcceptedCount:     acceptedCount,
+		GenerationContext: gc,
+	}, nil
+}
+
+func (h *MealPlanHandler) getPreviousPlans(userID uint) (*database.UserMealPlan, *database.UserMealPlan, error) {
+	lastAccepted, err := h.deps.DB.GetUserLastMealPlan(userID, database.PlanTypeWeekdays, true)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil, err
+	}
+
+	lastRejected, err := h.deps.DB.GetUserLastMealPlan(userID, database.PlanTypeWeekdays, false)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil, err
+	}
+
+	return lastAccepted, lastRejected, nil
+}
+
+func (h *MealPlanHandler) sendAndPersistPlan(data *PlanData) error {
+	plan, err := h.generateMealPlan(data)
+	if err != nil {
+		return err
+	}
+
+	doc, err := h.createPlanDocument(plan, data.UserLang)
+	if err != nil {
+		return fmt.Errorf("document creation failed: %w", err)
+	}
+
+	messageID, err := h.sendPlanDocument(data, doc)
+	if err != nil {
+		return err
+	}
+
+	return h.saveUserPlan(data.User.ID, messageID, plan)
+}
+
+func (h *MealPlanHandler) generateMealPlan(data *PlanData) (*models.CompleteMealPlan, error) {
+	return h.deps.NutritionAgent.GenerateMealPlan(
+		data.Ctx,
+		data.User,
+		data.LastAccepted,
+		data.LastRejected,
+		data.AcceptedCount,
 		h.planType,
 	)
+}
+
+func (h *MealPlanHandler) createPlanDocument(plan *models.CompleteMealPlan, lang database.UserLanguage) ([]byte, error) {
+	doc, err := GenerateDocFromMealPlan(plan, lang)
 	if err != nil {
-		logger.Err(err).Msg("Error generating meal plan")
-		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorGeneratePlan, userLang))
-		return
+		return nil, fmt.Errorf("pdf generation failed: %w", err)
 	}
+	return doc, nil
+}
 
-	logger.Debug().Msg("Created meal plan")
-
-	// Generate PDF
-	doc, err := GenerateDocFromMealPlan(plan, user.Language)
-	if err != nil {
-		logger.Err(err).Msg("Error generating document")
-		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorGenerateDoc, userLang))
-		return
-	}
-
-	logger.Debug().Msg("Generated document from meal plan")
-
-	// Send document
-	msg, err := bot.SendDocument(ctx, &tgbot.SendDocumentParams{
-		ChatID:  chatID,
-		Caption: i18n.GetText(i18n.KeyPlanCaption, userLang),
+func (h *MealPlanHandler) sendPlanDocument(data *PlanData, doc []byte) (int, error) {
+	msg, err := data.Bot.SendDocument(data.Ctx, &tgbot.SendDocumentParams{
+		ChatID:  data.Update.CallbackQuery.Message.Message.Chat.ID,
+		Caption: i18n.GetText(i18n.KeyPlanCaption, data.UserLang),
 		Document: &tgmodels.InputFileUpload{
 			Filename: "personalized_meal_plan.pdf",
 			Data:     &doc,
 		},
-		ReplyMarkup: &tgmodels.InlineKeyboardMarkup{
-			InlineKeyboard: [][]tgmodels.InlineKeyboardButton{
+		ReplyMarkup: h.createResponseButtons(data.UserLang),
+	})
+
+	if err != nil {
+		return 0, fmt.Errorf("failed to send document: %w", err)
+	}
+	return msg.ID, nil
+}
+
+func (h *MealPlanHandler) createResponseButtons(lang database.UserLanguage) *tgmodels.InlineKeyboardMarkup {
+	return &tgmodels.InlineKeyboardMarkup{
+		InlineKeyboard: [][]tgmodels.InlineKeyboardButton{
+			{
 				{
-					{
-						Text:         i18n.GetText(i18n.KeyAcceptButton, userLang),
-						CallbackData: string(CallBackDataAcceptPlan),
-					},
-					{
-						Text:         i18n.GetText(i18n.KeyRejectButton, userLang),
-						CallbackData: string(CallbackDataRejectPlan),
-					},
+					Text:         i18n.GetText(i18n.KeyAcceptButton, lang),
+					CallbackData: string(CallBackDataAcceptPlan),
+				},
+				{
+					Text:         i18n.GetText(i18n.KeyRejectButton, lang),
+					CallbackData: string(CallbackDataRejectPlan),
 				},
 			},
 		},
-	})
-	if err != nil {
-		logger.Err(err).Msg("Error sending document")
-		ErrorResponse(ctx, bot, chatID, i18n.GetText(i18n.KeyErrorSendDoc, userLang))
-		return
 	}
+}
 
-	// Save the meal plan to reference later
-	var userMealPlanInput []database.UserMealPlanFoodInput
-	for _, planFood := range plan.Plan {
-		userMealPlanInput = append(userMealPlanInput, database.UserMealPlanFoodInput{
-			Name:     planFood.Food,
-			Category: string(planFood.FoodCategory),
+func (h *MealPlanHandler) saveUserPlan(userID uint, messageID int, plan *models.CompleteMealPlan) error {
+	input := h.mapPlanToInput(plan)
+	err := h.deps.DB.SaveUserMealPlan(userID, messageID, h.planType, input)
+	if err != nil {
+		return fmt.Errorf("failed to save meal plan: %w", err)
+	}
+	return nil
+}
+
+func (h *MealPlanHandler) mapPlanToInput(plan *models.CompleteMealPlan) []database.UserMealPlanFoodInput {
+	var input []database.UserMealPlanFoodInput
+	for _, food := range plan.Plan {
+		input = append(input, database.UserMealPlanFoodInput{
+			Name:     food.Food,
+			Category: string(food.FoodCategory),
 		})
 	}
+	return input
+}
 
-	err = h.deps.DB.SaveUserMealPlan(userID, msg.ID, h.planType, userMealPlanInput)
-	if err != nil {
-		logger.Err(err).
-			Int("messageID", msg.ID).
-			Msg("Error saving user meal plan")
-		return
-	}
+func (h *MealPlanHandler) handlePlanError(gc *GenerationContext, err error) {
+	chatID := gc.Update.CallbackQuery.Message.Message.Chat.ID
+	gc.Logger.Err(err).Msg("Plan generation error")
+	ErrorResponse(gc.Ctx, gc.Bot, chatID, i18n.GetText(i18n.KeyErrorGeneral, gc.UserLang))
 }
 
 // removeMarkupOrDeleteMessage modifies or removes the message that triggered
