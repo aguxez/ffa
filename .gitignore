@@ -26,3 +26,4 @@ tmp
 
 data
 *.pdf
+.aider*
