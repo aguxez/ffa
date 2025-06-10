@@ -1,13 +1,17 @@
 package bot
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/aguxez/ffa/database"
 	"github.com/aguxez/ffa/i18n"
+	"github.com/aguxez/ffa/models"
 	tgbot "github.com/go-telegram/bot"
 	tgmodels "github.com/go-telegram/bot/models"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
@@ -218,7 +222,7 @@ func (h *MealPlanHandler) sendAndPersistPlan(data *PlanData) error {
 	return h.saveUserPlan(data.User.ID, messageID, plan)
 }
 
-func (h *MealPlanHandler) generateMealPlan(data *PlanData) (*models.CompleteMealPlan, error) {
+func (h *MealPlanHandler) generateMealPlan(data *PlanData) (models.CompleteMealPlan, error) {
 	return h.deps.NutritionAgent.GenerateMealPlan(
 		data.Ctx,
 		data.User,
@@ -229,15 +233,15 @@ func (h *MealPlanHandler) generateMealPlan(data *PlanData) (*models.CompleteMeal
 	)
 }
 
-func (h *MealPlanHandler) createPlanDocument(plan *models.CompleteMealPlan, lang database.UserLanguage) ([]byte, error) {
+func (h *MealPlanHandler) createPlanDocument(plan models.CompleteMealPlan, lang database.UserLanguage) (bytes.Buffer, error) {
 	doc, err := GenerateDocFromMealPlan(plan, lang)
 	if err != nil {
-		return nil, fmt.Errorf("pdf generation failed: %w", err)
+		return bytes.Buffer{}, fmt.Errorf("pdf generation failed: %w", err)
 	}
 	return doc, nil
 }
 
-func (h *MealPlanHandler) sendPlanDocument(data *PlanData, doc []byte) (int, error) {
+func (h *MealPlanHandler) sendPlanDocument(data *PlanData, doc bytes.Buffer) (int, error) {
 	msg, err := data.Bot.SendDocument(data.Ctx, &tgbot.SendDocumentParams{
 		ChatID:  data.Update.CallbackQuery.Message.Message.Chat.ID,
 		Caption: i18n.GetText(i18n.KeyPlanCaption, data.UserLang),
@@ -271,7 +275,7 @@ func (h *MealPlanHandler) createResponseButtons(lang database.UserLanguage) *tgm
 	}
 }
 
-func (h *MealPlanHandler) saveUserPlan(userID uint, messageID int, plan *models.CompleteMealPlan) error {
+func (h *MealPlanHandler) saveUserPlan(userID uint, messageID int, plan models.CompleteMealPlan) error {
 	input := h.mapPlanToInput(plan)
 	err := h.deps.DB.SaveUserMealPlan(userID, messageID, h.planType, input)
 	if err != nil {
@@ -280,7 +284,7 @@ func (h *MealPlanHandler) saveUserPlan(userID uint, messageID int, plan *models.
 	return nil
 }
 
-func (h *MealPlanHandler) mapPlanToInput(plan *models.CompleteMealPlan) []database.UserMealPlanFoodInput {
+func (h *MealPlanHandler) mapPlanToInput(plan models.CompleteMealPlan) []database.UserMealPlanFoodInput {
 	var input []database.UserMealPlanFoodInput
 	for _, food := range plan.Plan {
 		input = append(input, database.UserMealPlanFoodInput{
@@ -294,7 +298,7 @@ func (h *MealPlanHandler) mapPlanToInput(plan *models.CompleteMealPlan) []databa
 func (h *MealPlanHandler) handlePlanError(gc *GenerationContext, err error) {
 	chatID := gc.Update.CallbackQuery.Message.Message.Chat.ID
 	gc.Logger.Err(err).Msg("Plan generation error")
-	ErrorResponse(gc.Ctx, gc.Bot, chatID, i18n.GetText(i18n.KeyErrorGeneral, gc.UserLang))
+	ErrorResponse(gc.Ctx, gc.Bot, chatID, i18n.GetText(i18n.KeyErrorGeneratePlan, gc.UserLang))
 }
 
 // removeMarkupOrDeleteMessage modifies or removes the message that triggered
