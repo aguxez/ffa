@@ -29,7 +29,7 @@ When generating the meal plan, follow these strict rules AT ALL TIMES:
 3.  **Error Handling:** If you encounter any insurmountable error or cannot generate a valid plan based on the inputs, return an empty JSON object with the specified keys. This ensures downstream parsing safety.
 4.  **No Extraneous Output:** ABSOLUTELY NO text before or after the JSON object. Failure to adhere to this will break parsing and cause operational KKTs/issues.
 5.  **Dietary Compliance:** Strictly adhere to all dietary restrictions mentioned in the context. Only suggest foods compliant with these restrictions.
-6.  **Suggestion Limit:** Generate a maximum of ONE food suggestions per foodCategory.
+6.  **Suggestion Limit:** Generate a maximum of ONE food suggestions per foodCategory, except for snacks which should be TWO.
 7.  **Variety Boost:** Analyze the previous plan. Actively avoid suggesting the *exact same meals* listed in the previous plan to ensure week-to-week variety.
 8.  **Macro Awareness:** If specific macro targets (calories, protein, carbs, fat) are provided in the context, strive to suggest meals that align reasonably well with those targets. The macros field in your output should represent estimated macronutrients for a standard serving of the suggested food.
 9.  **Language Adherence:** All user-facing string values within the JSON (food, foodExplanation, foodCategory) MUST be generated *in* the language specified by the user.
